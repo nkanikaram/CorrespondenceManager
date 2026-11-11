@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ECCO Communication Manager — Architecture &amp; AI Strategy</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  /* ─── Print / PDF Stylesheet ─────────────────────────────────────────────── */
+  @media print {
+    @page {
+      size: A4 landscape;
+      margin: 15mm 12mm 15mm 12mm;
+    }
+    @page :first { margin-top: 20mm; }
+
+    /* Hide interactive chrome */
+    nav, .print-bar, .download-btn { display: none !important; }
+
+    body {
+      background: #fff !important;
+      color: #000 !important;
+      font-size: 10pt;
+      line-height: 1.4;
+    }
+
+    header {
+      background: #0a3d62 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      color: #fff !important;
+      padding: 1.5rem 1rem !important;
+      page-break-after: avoid;
+    }
+
+    main { max-width: 100% !important; padding: .5rem !important; }
+
+    h2 { font-size: 13pt; page-break-after: avoid; color: #0a3d62 !important; }
+    h3 { font-size: 11pt; page-break-after: avoid; }
+    h4 { font-size: 10pt; }
+    p, li { font-size: 9.5pt; }
+
+    section { page-break-before: always; margin-bottom: 0 !important; }
+    section:first-of-type { page-break-before: avoid; }
+
+    .diagram-wrapper,
+    .ai-diagram-wrapper {
+      page-break-inside: avoid;
+      page-break-before: auto;
+      border: 1px solid #ccc !important;
+      box-shadow: none !important;
+      background: #fff !important;
+      margin-bottom: 1rem !important;
+      padding: .75rem !important;
+      overflow: visible !important;
+    }
+
+    .diagram-wrapper .mermaid,
+    .ai-diagram-wrapper .mermaid {
+      min-width: unset !important;
+      max-width: 100% !important;
+    }
+
+    /* Force SVGs to scale to page width */
+    svg {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+
+    .rec-grid, .ai-ideas-grid {
+      display: block !important;
+    }
+    .rec-card, .ai-idea {
+      page-break-inside: avoid;
+      margin-bottom: .75rem !important;
+      border-left-width: 4px !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .ai-section {
+      background: #0d1b2a !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      color: #fff !important;
+      border-radius: 0 !important;
+    }
+    .ai-section h2 { color: #00d2ff !important; }
+    .ai-section h3 { color: #00d2ff !important; }
+    .ai-idea { background: rgba(255,255,255,.08) !important; }
+    .ai-idea h4 { color: #fff !important; }
+
+    .tag {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    footer { page-break-before: always; font-size: 8pt; }
+  }
+</style>
+<style>
+  :root {
+    --brand: #0a3d62;
+    --accent: #1e90ff;
+    --accent2: #00b894;
+    --accent3: #e84393;
+    --warn: #e17055;
+    --bg: #f4f7fb;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --muted: #6c757d;
+    --border: #dee2e6;
+    --ai-bg: #0d1b2a;
+    --ai-accent: #00d2ff;
+    --ai-accent2: #7b2ff7;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  header {
+    background: linear-gradient(135deg, var(--brand) 0%, #1565c0 100%);
+    color: #fff;
+    padding: 3rem 2rem 2rem;
+    text-align: center;
+  }
+  header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
+  header p  { margin-top: .5rem; opacity: .8; font-size: 1rem; }
+  header .badge {
+    display: inline-block; margin-top: 1rem;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+    padding: .3rem .8rem; border-radius: 20px; font-size: .8rem; letter-spacing: .5px;
+  }
+
+  nav {
+    background: var(--brand);
+    display: flex; flex-wrap: wrap; justify-content: center; gap: .25rem;
+    padding: .75rem 1rem; position: sticky; top: 0; z-index: 100;
+    border-bottom: 3px solid var(--accent);
+  }
+  nav a {
+    color: rgba(255,255,255,.85); text-decoration: none;
+    padding: .4rem .9rem; border-radius: 6px; font-size: .85rem; font-weight: 500;
+    transition: background .2s;
+  }
+  nav a:hover { background: rgba(255,255,255,.15); color: #fff; }
+
+  main { max-width: 1400px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  section { margin-bottom: 3rem; }
+
+  h2 {
+    font-size: 1.6rem; color: var(--brand); margin-bottom: 1.5rem;
+    padding-bottom: .5rem; border-bottom: 3px solid var(--accent);
+    display: flex; align-items: center; gap: .5rem;
+  }
+  h2 .num {
+    background: var(--accent); color: #fff;
+    width: 2rem; height: 2rem; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 700; flex-shrink: 0;
+  }
+
+  h3 { font-size: 1.15rem; color: var(--brand); margin: 1.5rem 0 .75rem; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+
+  .diagram-wrapper {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    overflow-x: auto;
+  }
+  .diagram-wrapper h3 { margin-top: 0; font-size: 1.1rem; margin-bottom: 1rem; }
+
+  .diagram-wrapper .mermaid { min-width: 700px; }
+
+  /* Rec grid */
+  .rec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
+  .rec-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    border-left: 5px solid var(--accent);
+  }
+  .rec-card.perf  { border-left-color: var(--accent2); }
+  .rec-card.scale { border-left-color: var(--warn); }
+  .rec-card .tag {
+    display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .5px;
+    text-transform: uppercase; padding: .2rem .6rem; border-radius: 4px; margin-bottom: .5rem;
+  }
+  .tag.resil  { background: #e3f2fd; color: #1565c0; }
+  .tag.perf   { background: #e8f5e9; color: #2e7d32; }
+  .tag.scale  { background: #fff3e0; color: #e65100; }
+
+  .rec-card h4 { font-size: 1rem; margin-bottom: .4rem; }
+  .rec-card p  { font-size: .9rem; color: var(--muted); }
+  .rec-card ul { margin-top: .5rem; padding-left: 1.2rem; font-size: .88rem; color: #444; }
+  .rec-card li { margin-bottom: .25rem; }
+
+  /* AI ideas */
+  .ai-section { background: var(--ai-bg); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; }
+  .ai-section h2 { color: var(--ai-accent); border-bottom-color: var(--ai-accent2); }
+  .ai-section h2 .num { background: var(--ai-accent2); }
+  .ai-section h3 { color: var(--ai-accent); }
+
+  .ai-ideas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 1.25rem; }
+  .ai-idea {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(0,210,255,.2);
+    border-radius: 12px; padding: 1.25rem;
+    border-left: 5px solid var(--ai-accent);
+  }
+  .ai-idea:nth-child(2) { border-left-color: #7b2ff7; }
+  .ai-idea:nth-child(3) { border-left-color: #00b894; }
+  .ai-idea:nth-child(4) { border-left-color: #e84393; }
+  .ai-idea:nth-child(5) { border-left-color: #fdcb6e; }
+
+  .ai-idea .idea-num {
+    font-size: .75rem; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--ai-accent); margin-bottom: .4rem;
+  }
+  .ai-idea h4 { color: #fff; font-size: 1.05rem; margin-bottom: .5rem; }
+  .ai-idea p  { color: rgba(255,255,255,.7); font-size: .9rem; }
+  .ai-idea ul { color: rgba(255,255,255,.65); font-size: .87rem; padding-left: 1.2rem; margin-top: .5rem; }
+  .ai-idea li { margin-bottom: .25rem; }
+  .ai-idea .impact {
+    display: inline-block; margin-top: .75rem;
+    background: rgba(255,255,255,.1); border-radius: 4px;
+    padding: .2rem .6rem; font-size: .78rem; color: rgba(255,255,255,.8);
+  }
+
+  .ai-diagram-wrapper {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(0,210,255,.2);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; overflow-x: auto;
+  }
+  .ai-diagram-wrapper h3 { color: var(--ai-accent); margin-top: 0; margin-bottom: 1rem; }
+  .ai-diagram-wrapper .mermaid { min-width: 700px; }
+
+  /* Print bar */
+  .print-bar {
+    background: #1a2f4a;
+    color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: .5rem;
+    padding: .6rem 1.5rem;
+    font-size: .85rem;
+  }
+  .print-bar-title { opacity: .7; font-size: .8rem; }
+  .print-bar-actions { display: flex; align-items: center; gap: .75rem; }
+  .print-hint { opacity: .6; font-size: .78rem; }
+  .download-btn {
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 6px;
+    padding: .45rem 1.1rem; font-size: .85rem; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+    white-space: nowrap;
+  }
+  .download-btn:hover { background: #1270cc; }
+
+  footer {
+    text-align: center; padding: 2rem; background: var(--brand); color: rgba(255,255,255,.6);
+    font-size: .85rem;
+  }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted);
+  }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ECCO Communication Manager</h1>
+  <p>Architecture Reference · Resiliency &amp; Performance Recommendations · Agentic AI Strategy</p>
+  <span class="badge">Azure · .NET 8 · NServiceBus · East US 2</span>
+</header>
+
+<div class="print-bar">
+  <span class="print-bar-title">ECCO Communication Manager — Architecture &amp; AI Strategy</span>
+  <div class="print-bar-actions">
+    <span class="print-hint">💡 Use <strong>Print → Save as PDF</strong> in your browser for best results&nbsp;&nbsp;|</span>
+    <button class="download-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+  </div>
+</div>
+
+<nav>
+  <a href="#arch">Architecture</a>
+  <a href="#network">Networking</a>
+  <a href="#pipeline">Handler Pipeline</a>
+  <a href="#recs">Recommendations</a>
+  <a href="#ai">Agentic AI</a>
+  <a href="#ai-arch">AI Architecture</a>
+  <a href="#ai-flow">AI Process Flow</a>
+</nav>
+
+<main>
+
+<!-- ═══════════════════════════════ SECTION 1 — CURRENT ARCHITECTURE ═══════════════ -->
+<section id="arch">
+  <h2><span class="num">1</span> Current System Architecture</h2>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#1565c0"></div> Azure Infrastructure</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2e7d32"></div> ECCO Application Services</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6a1b9a"></div> External Partners</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#e65100"></div> Data / Secrets</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#00838f"></div> Observability</div>
+  </div>
+
+  <div class="diagram-wrapper">
+    <h3>Full System Architecture — Including Networking</h3>
+    <div class="mermaid">
+graph TB
+  subgraph INTERNET["☁  Internet / Calling Systems"]
+    CS1["🏢 Partner System A\n(Policy Admin)"]
+    CS2["🏢 Partner System B\n(Claims)"]
+    CS3["🏢 Partner System C\n(Billing)"]
+  end
+
+  subgraph TRUSTAGE["TrustAge API Gateway Layer"]
+    APIM["🔒 Azure API Management\napimanager.trustage.com\n─────────────────\n• JWT / OIDC Validation\n• Subscription Key Auth\n• WAF / OWASP Policies\n• Rate Limiting\n• SSL Termination"]
+    OIDC["🔑 OIDC Discovery\nR-App-ServiceGateway-ECCO\nR-App-ECCO-Developers-LSA"]
+  end
+
+  subgraph AZURE_EAST2["Azure — East US 2"]
+
+    subgraph APP_LAYER["Application Layer"]
+      APP["⚙  Azure App Service\nProcessRequestEndPoint\n.NET 8 / ASP.NET Core\n─────────────────────\n• POST /processcorrespondencerequest\n• GET  /status/docid/{id}\n• GET  /status/correspondence/{id}\n• GET  /status/claim/{claimNumber}\n• GET  /status/documenttypes\n• POST /status/correspondencefilterrequest\n• Cache Mgmt Endpoints\n• Health Checks"]
+
+      FUNC["⚡ Azure Functions\n─────────────────\n• DocumentStatusSync\n• ArchiveReconciliation"]
+    end
+
+    subgraph MESSAGING["Messaging Layer"]
+      SB["📨 Azure Service Bus\nNServiceBus\n─────────────\n• ProcessRequestEndPoint queue\n• Routing Slip headers\n• Retry / Error queues\n• Delayed Retries"]
+    end
+
+    subgraph DATA["Data Layer"]
+      SQL["🗄  Azure SQL Database\nCorrespondenceDB\n──────────────────\n• CorrespondenceRequest\n• CorrespondenceStatus\n• CorrespondenceDocumentType\n• RoutingConfiguration\n• DocumentIds pool\n• NonRecoverableErrorLog"]
+      KV["🔐 Azure Key Vault\nkv-p01-ecco\n─────────────\n• DB Connection String\n• Service Bus FQURL\n• PGP Keys (encrypt policy#)\n• VF Client Credentials\n• DocID API Keys\n• NServiceBus License"]
+    end
+
+    subgraph OBS["Observability"]
+      AI["📊 Application Insights\nEast US 2\n──────────\n• Structured Logging\n• Request Tracing\n• Dependency Tracking"]
+      DT["🔍 Dynatrace\nOneAgent\n────────\n• APM\n• Infra Monitoring"]
+    end
+
+    CACHE["💾 In-Memory Cache\nSecretsCacheService\n4-hour TTL\n• KV Secrets\n• VF Bearer Token\n• DocID Bearer Token"]
+
+  end
+
+  subgraph EXTERNAL["External Services"]
+    VF["📄 VentureFusion API\nFusionAPI/DataRecords\n──────────────────\n• Document Composition\n• Mail Delivery\n• ePresent / Email"]
+    ECM["🗂  Documentum ECM\nSOAP API\n───────────\n• DocID Generation\n• Archive Status\n• Document Storage"]
+  end
+
+  CS1 & CS2 & CS3 -->|"HTTPS + Bearer JWT"| APIM
+  APIM -->|"validate-jwt"| OIDC
+  APIM -->|"HTTPS (mTLS)"| APP
+  APP -->|"Publish Message\nRouting Slip Headers"| SB
+  SB -->|"IHandleMessages"| APP
+  APP & FUNC -->|"EF Core + Managed Identity"| SQL
+  APP -->|"Managed Identity"| KV
+  KV -.->|"cached 4h"| CACHE
+  CACHE -.->|"in-process"| APP
+  APP -->|"Bearer OAuth2"| VF
+  APP -->|"SOAP + Bearer"| ECM
+  FUNC -->|"ECM SOAP"| ECM
+  APP & FUNC -->|"SDK"| AI
+  APP & FUNC -->|"OneAgent"| DT
+
+  style INTERNET fill:#f8f9fa,stroke:#adb5bd,color:#000
+  style TRUSTAGE fill:#fff3e0,stroke:#ef6c00,color:#000
+  style AZURE_EAST2 fill:#e3f2fd,stroke:#1565c0,color:#000
+  style APP_LAYER fill:#e8f5e9,stroke:#2e7d32,color:#000
+  style MESSAGING fill:#fce4ec,stroke:#c62828,color:#000
+  style DATA fill:#fff8e1,stroke:#f57f17,color:#000
+  style OBS fill:#e8eaf6,stroke:#3949ab,color:#000
+  style EXTERNAL fill:#f3e5f5,stroke:#6a1b9a,color:#000
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 2 — NETWORK ═══════════════════════════ -->
+<section id="network">
+  <h2><span class="num">2</span> Networking &amp; Security Topology</h2>
+
+  <div class="diagram-wrapper">
+    <h3>Network Flow &amp; Security Zones</h3>
+    <div class="mermaid">
+graph LR
+  subgraph PUB["Public Internet Zone"]
+    EXT["External Callers\nPartner Systems"]
+  end
+
+  subgraph DMZ["DMZ — TrustAge APIM Layer"]
+    WAF["WAF\nOWASP Policy\nRate Limit"]
+    APIM_GW["APIM Gateway\nTLS 1.2+\nJWT Validation\nSubscription Keys"]
+  end
+
+  subgraph PRIV["Azure Private Zone — East US 2"]
+    subgraph VNET["Virtual Network"]
+      subgraph AppSubnet["App Subnet"]
+        APP_SVC["App Service\nManaged Identity\nSI: Outbound IP"]
+        FUNC_SVC["Azure Functions\nManaged Identity"]
+      end
+      subgraph DataSubnet["Data Subnet"]
+        SQL_PE["Azure SQL\nPrivate Endpoint"]
+        KV_PE["Key Vault\nPrivate Endpoint"]
+        SB_PE["Service Bus\nPrivate Endpoint"]
+      end
+    end
+  end
+
+  subgraph EXT_SVC["External Services (Outbound HTTPS)"]
+    VF_API["VentureFusion API\nvia TrustAge APIM\nOAuth2 Client Creds"]
+    ECM_API["Documentum ECM\nvia TrustAge APIM\nSOAP / Bearer"]
+    OIDC_EP["OIDC Discovery\nTrustAge APIM"]
+  end
+
+  subgraph AUTH["Identity &amp; Auth"]
+    AAD["Azure Active Directory\nManaged Identity\nOIDC Provider"]
+  end
+
+  EXT -->|"HTTPS / JWT Bearer"| WAF
+  WAF -->|"Filtered"| APIM_GW
+  APIM_GW -->|"validate-jwt → OIDC_EP"| OIDC_EP
+  APIM_GW -->|"Private / HTTPS"| APP_SVC
+  APP_SVC -->|"NServiceBus\nAMQP / Private"| SB_PE
+  APP_SVC & FUNC_SVC -->|"EF Core / Private"| SQL_PE
+  APP_SVC & FUNC_SVC -->|"SDK / Private"| KV_PE
+  APP_SVC -->|"HTTPS Outbound"| VF_API
+  APP_SVC -->|"SOAP / HTTPS"| ECM_API
+  FUNC_SVC -->|"SOAP / HTTPS"| ECM_API
+  APP_SVC & FUNC_SVC -->|"Managed Identity"| AAD
+  KV_PE -->|"RBAC"| AAD
+
+  style PUB fill:#ffebee,stroke:#c62828,color:#000
+  style DMZ fill:#fff3e0,stroke:#ef6c00,color:#000
+  style PRIV fill:#e3f2fd,stroke:#1565c0,color:#000
+  style VNET fill:#bbdefb,stroke:#1565c0,color:#000
+  style AppSubnet fill:#e8f5e9,stroke:#2e7d32,color:#000
+  style DataSubnet fill:#fff8e1,stroke:#f57f17,color:#000
+  style EXT_SVC fill:#f3e5f5,stroke:#6a1b9a,color:#000
+  style AUTH fill:#e8eaf6,stroke:#3949ab,color:#000
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 3 — HANDLER PIPELINE ══════════════════ -->
+<section id="pipeline">
+  <h2><span class="num">3</span> NServiceBus Routing Slip Handler Pipeline</h2>
+
+  <div class="diagram-wrapper">
+    <h3>Message Processing Pipeline — Routing Slip Pattern</h3>
+    <div class="mermaid">
+sequenceDiagram
+  actor Caller as Calling System
+  participant APIM as TrustAge APIM
+  participant API as CommManager API
+  participant SQL as Azure SQL
+  participant KV as Key Vault Cache
+  participant SB as Azure Service Bus
+  participant VF as VentureFusion
+  participant ECM as Documentum ECM
+
+  Caller->>APIM: POST /processcorrespondencerequest + JWT Bearer
+  APIM->>APIM: Validate JWT (OIDC, role claim, audience)
+  APIM->>API: Forwarded request (HTTPS)
+
+  API->>KV: Fetch secrets (PGP key, VF creds, DB conn)
+  API->>API: Validate request (trim, special chars, required fields)
+  API->>SQL: GetRoutingConfiguration(requestingSystemName)
+  SQL-->>API: Route: [BeginRequest → AssignDocId → AddDB → Compose → UpdateDB]
+
+  opt DocId not provided AND AssignDocumentumId in route
+    API->>SQL: GetAndUpdateDocumentIdAsync() — claim from pool
+    alt Pool empty
+      API->>APIM: SOAP: GenerateIDs(N) → Documentum ECM
+      APIM->>ECM: SOAP GenerateIDs
+      ECM-->>API: New DocIDs
+      API->>SQL: Bulk insert new DocIDs
+    end
+    API->>SQL: Claim DocId, mark Used
+  end
+
+  API->>VF: Map request → VentureFusion DataRecord format
+  API->>SB: Send BeginRequestHandlerMessage\n  Headers: RoutingSlip-Route, RoutingSlip-Index=0
+
+  Note over SB,API: ─── Routing Slip Pipeline ───
+
+  SB->>API: BeginRequestHandler.Handle()
+  API->>SB: Forward → AssignDocumentumIdHandler (index+1)
+
+  SB->>API: AssignDocumentumIdHandler.Handle()
+  API->>ECM: Assign DocId to document
+  API->>SB: Forward → AddCorrespondenceDBHandler
+
+  SB->>API: AddCorrespondenceDBHandler.Handle()
+  API->>SQL: INSERT CorrespondenceRequest + StatusHistory
+  API->>SB: Forward → RequestCompositionHandler
+
+  SB->>API: RequestCompositionHandler.Handle()
+  API->>VF: POST FusionApi/DataRecords (OAuth2)
+  VF-->>API: 200 OK + VF Response ID
+  API->>SB: Forward → UpdateCorrespondenceDBHandler
+
+  SB->>API: UpdateCorrespondenceDBHandler.Handle()
+  API->>SQL: UPDATE CorrespondenceRequest (VFResponseId, status)
+  API->>SB: Forward → WaitForArchiveHandler
+
+  SB->>API: WaitForArchiveHandler.Handle()
+  Note over API: Poll / defer until ECM archive confirms
+
+  SB->>API: UpdateArchivedStatusDBHandler.Handle()
+  API->>SQL: UPDATE status = Archived
+
+  API-->>Caller: 202 Accepted {correlationId, docId, ventureFusionData}
+    </div>
+  </div>
+
+  <div class="diagram-wrapper">
+    <h3>Azure Functions — Async Reconciliation</h3>
+    <div class="mermaid">
+graph LR
+  subgraph TIMER["Timer Triggers"]
+    T1["⏱ DocumentStatusSync\nScheduled Trigger"]
+    T2["⏱ ArchiveReconciliation\nScheduled Trigger"]
+  end
+
+  subgraph FUNC["Azure Functions"]
+    F1["DocumentStatusSync\n────────────────\n1. Query ECM via SOAP\n2. Get latest archive status\n3. Update SQL status records"]
+    F2["ArchiveReconciliation\n─────────────────────\n1. Find unarchived records\n2. Retry archive with ECM\n3. Log non-recoverable errors"]
+  end
+
+  ECM2["Documentum ECM\nECMServiceClientWrapper\nSOAP IECMServiceClient"]
+  SQL2["Azure SQL\nCorrespondenceDB"]
+  SB2["Azure Service Bus\nServicebusService"]
+
+  T1 --> F1
+  T2 --> F2
+  F1 & F2 -->|"SOAP"| ECM2
+  F1 & F2 -->|"EF Core"| SQL2
+  F2 -->|"Dead-letter"| SB2
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 4 — RECOMMENDATIONS ══════════════════ -->
+<section id="recs">
+  <h2><span class="num">4</span> Recommendations — Resiliency, Performance &amp; Scalability</h2>
+
+  <h3>Resiliency</h3>
+  <div class="rec-grid">
+
+    <div class="rec-card">
+      <span class="tag resil">Resiliency</span>
+      <h4>R1 — Polly Resilience Pipelines on All HTTP Calls</h4>
+      <p>VentureFusion and Documentum ECM calls use manual 401-retry logic today with no circuit breaker or exponential back-off on transient failures.</p>
+      <ul>
+        <li>Replace ad-hoc retry with <code>Microsoft.Extensions.Http.Resilience</code> (built on Polly v8)</li>
+        <li>Add per-client circuit breakers: open after 5 consecutive failures, half-open after 30s</li>
+        <li>Exponential jitter back-off: 1s → 2s → 4s (+jitter) × 3 attempts</li>
+        <li>Expose circuit state via health check endpoint already in place</li>
+      </ul>
+    </div>
+
+    <div class="rec-card">
+      <span class="tag resil">Resiliency</span>
+      <h4>R2 — Outbox Pattern for DB + Service Bus Atomicity</h4>
+      <p>Current flow writes to SQL then publishes to Service Bus separately. A crash between these two steps causes a lost message or duplicate.</p>
+      <ul>
+        <li>Implement transactional outbox: write the message to an <code>OutboxMessages</code> SQL table in the same EF Core transaction as the domain write</li>
+        <li>A background worker (or Azure Function) reads the outbox table and publishes to Service Bus, then marks sent</li>
+        <li>Guarantees at-least-once delivery without distributed transactions</li>
+      </ul>
+    </div>
+
+    <div class="rec-card">
+      <span class="tag resil">Resiliency</span>
+      <h4>R3 — Dead-Letter Queue Alerting &amp; Replay</h4>
+      <p>NServiceBus has error/retry queues configured, but there is no alert when messages land in the dead-letter queue, and no replay UI.</p>
+      <ul>
+        <li>Add Azure Monitor alert on Service Bus Dead-Letter message count &gt; 0</li>
+        <li>Build a minimal admin endpoint (or use ServicePulse) to replay failed messages</li>
+        <li>Persist dead-letter context to <code>NonRecoverableErrorLog</code> table (already modeled)</li>
+        <li>Set up PagerDuty / Teams notification for on-call escalation</li>
+      </ul>
+    </div>
+
+    <div class="rec-card">
+      <span class="tag resil">Resiliency</span>
+      <h4>R4 — Geo-Redundant SQL + Failover Group</h4>
+      <p>Database is a single-region Azure SQL instance in East US 2. A regional outage stops all correspondence processing.</p>
+      <ul>
+        <li>Enable Active Geo-Replication to West US 2 (paired region)</li>
+        <li>Configure an Auto-Failover Group with automatic failover policy</li>
+        <li>Update connection string to use the failover group DNS endpoint (transparent to EF Core)</li>
+        <li>Test failover quarterly via chaos engineering drill</li>
+      </ul>
+    </div>
+
+    <div class="rec-card">
+      <span class="tag resil">Resiliency</span>
+      <h4>R5 — Key Vault Regional Redundancy &amp; Secret Rotation</h4>
+      <p>Secrets cached for 4 hours; if Key Vault is unreachable at cache expiry the service degrades. PGP keys and VF credentials have no automated rotation.</p>
+      <ul>
+        <li>Enable Key Vault soft-delete and purge protection (if not already set)</li>
+        <li>Add a fallback Key Vault in the paired region; resolve via DNS failover</li>
+        <li>Implement secret rotation: Azure Automation runbook triggers rotation on a schedule; new version cached on next request</li>
+        <li>Raise an alert if <code>GetSecretAsync</code> latency exceeds 500ms</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <h3>Performance</h3>
+  <div class="rec-grid">
+
+    <div class="rec-card perf">
+      <span class="tag perf">Performance</span>
+      <h4>P1 — DocID Pool Pre-warming &amp; Batch Size Tuning</h4>
+      <p>DocID generation is a synchronous SOAP call that holds a semaphore during the request path. Under load this becomes a serialization bottleneck.</p>
+      <ul>
+        <li>Move DocID replenishment entirely to a background <code>IHostedService</code>; remove it from the request path</li>
+        <li>Pre-warm on startup: fill pool to 2× threshold before accepting traffic</li>
+        <li>Tune <code>DocIdCount</code> (batch size) to cover peak-hour throughput with 5-min buffer</li>
+        <li>Expose pool depth as an Application Insights custom metric for autoscale decisions</li>
+      </ul>
+    </div>
+
+    <div class="rec-card perf">
+      <span class="tag perf">Performance</span>
+      <h4>P2 — IHttpClientFactory + Named Clients for VF &amp; ECM</h4>
+      <p><code>VentureFusionService</code> and <code>DocumentIdGeneratorService</code> both instantiate raw <code>HttpClient</code> objects as fields, which causes socket exhaustion under load and doesn't pool connections.</p>
+      <ul>
+        <li>Register named/typed clients via <code>services.AddHttpClient&lt;IVentureFusionService, VentureFusionService&gt;()</code></li>
+        <li>Configure <code>SocketsHttpHandler</code> with <code>PooledConnectionLifetime = 2min</code></li>
+        <li>Combine with Polly resilience pipelines (R1) on the same registration</li>
+        <li>Remove all <code>new HttpClient()</code> field initializers</li>
+      </ul>
+    </div>
+
+    <div class="rec-card perf">
+      <span class="tag perf">Performance</span>
+      <h4>P3 — Azure Redis Cache for Distributed Secrets &amp; Token Cache</h4>
+      <p>In-memory <code>SecretsCacheService</code> is per-instance; in a multi-instance App Service plan each instance fetches secrets independently from Key Vault, multiplying KV request load.</p>
+      <ul>
+        <li>Replace <code>IMemoryCache</code> with <code>IDistributedCache</code> backed by Azure Cache for Redis</li>
+        <li>Single Redis instance serves all App Service instances; KV calls drop proportionally</li>
+        <li>Use Redis for VF and DocID bearer tokens as well</li>
+        <li>Keep in-memory L1 as a 60s read-through for hot-path performance</li>
+      </ul>
+    </div>
+
+    <div class="rec-card perf">
+      <span class="tag perf">Performance</span>
+      <h4>P4 — Async EF Core Queries + Compiled Queries</h4>
+      <p>All EF Core calls are async (good), but high-frequency status queries (by DocId, ClaimNumber) re-compile expression trees on every call.</p>
+      <ul>
+        <li>Add compiled queries (<code>EF.CompileAsyncQuery</code>) for the three highest-volume lookups</li>
+        <li>Add a non-clustered index on <code>CorrespondenceRequest.PolicyNumberHash</code> and <code>ClaimNumber</code></li>
+        <li>Enable query result caching in Redis for read-heavy status endpoints (5-second TTL)</li>
+        <li>Enable <code>EnableRetryOnFailure</code> in SQL connection resilience options</li>
+      </ul>
+    </div>
+
+    <div class="rec-card perf">
+      <span class="tag perf">Performance</span>
+      <h4>P5 — APIM Response Caching for Status Endpoints</h4>
+      <p>Read-only status endpoints (GET /status/docid, /status/claim) are called frequently and return data that is stable for several seconds.</p>
+      <ul>
+        <li>Add APIM <code>&lt;cache-lookup&gt;</code> / <code>&lt;cache-store&gt;</code> policies with 10s TTL on GET status endpoints</li>
+        <li>Vary cache key by <code>Authorization</code> header to preserve per-caller isolation</li>
+        <li>Reduces App Service CPU and SQL reads by an estimated 30–50% at peak</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <h3>Scalability</h3>
+  <div class="rec-grid">
+
+    <div class="rec-card scale">
+      <span class="tag scale">Scalability</span>
+      <h4>S1 — App Service Autoscale Based on Service Bus Queue Depth</h4>
+      <p>App Service scales on CPU/memory by default, but the real pressure signal is Service Bus queue depth — message backlog, not instance CPU.</p>
+      <ul>
+        <li>Configure Azure Monitor autoscale rule: scale out when <code>ActiveMessageCount &gt; 200</code>, scale in when <code>&lt; 20</code></li>
+        <li>Set min=2 instances for availability, max=10 for cost control</li>
+        <li>Pair with NServiceBus concurrency setting (<code>LimitMessageProcessingConcurrencyTo</code>) per instance</li>
+      </ul>
+    </div>
+
+    <div class="rec-card scale">
+      <span class="tag scale">Scalability</span>
+      <h4>S2 — Partition Service Bus Topics by Delivery Method</h4>
+      <p>Mail and ePresent deliveries have very different latency profiles. A slow mail batch delays ePresent (email) confirmations.</p>
+      <ul>
+        <li>Create separate queues/subscriptions: <code>process-mail</code> and <code>process-epresent</code></li>
+        <li>Route in <code>CommManagerController</code> based on <code>request.Process.DeliveryMethod</code></li>
+        <li>Scale ePresent consumers independently (lower latency SLA)</li>
+        <li>Enables per-channel throttling and priority processing</li>
+      </ul>
+    </div>
+
+    <div class="rec-card scale">
+      <span class="tag scale">Scalability</span>
+      <h4>S3 — Migrate Azure Functions to Flex Consumption Plan</h4>
+      <p>Azure Functions on a Consumption plan cold-start delays hurt the reconciliation latency; on Dedicated plan they over-provision.</p>
+      <ul>
+        <li>Move to Flex Consumption plan (GA 2024): always-warm instances + per-execution scale</li>
+        <li>Enables VNet integration needed for private endpoints (Data Subnet)</li>
+        <li>Reduce reconciliation latency from minutes to seconds</li>
+      </ul>
+    </div>
+
+    <div class="rec-card scale">
+      <span class="tag scale">Scalability</span>
+      <h4>S4 — Event-Driven Archive Status via Service Bus (Replace Timer Poll)</h4>
+      <p><code>DocumentStatusSync</code> and <code>ArchiveReconciliation</code> timer-poll ECM on a fixed schedule, creating unnecessary load and delayed status updates.</p>
+      <ul>
+        <li>Request ECM to emit a webhook / event on archive completion</li>
+        <li>Publish to Service Bus topic; <code>DocumentStatusSync</code> becomes an event-driven Function</li>
+        <li>Status latency drops from minutes (poll interval) to seconds</li>
+        <li>Reduces ECM SOAP call volume by ~90%</li>
+      </ul>
+    </div>
+
+    <div class="rec-card scale">
+      <span class="tag scale">Scalability</span>
+      <h4>S5 — CQRS Read Model for Correspondence Status Queries</h4>
+      <p>All write (process request) and read (status queries) operations share the same SQL database and EF Core model, competing for connections at scale.</p>
+      <ul>
+        <li>Introduce a read-optimized projection table (updated by event handlers)</li>
+        <li>Route GET /status/* to a read replica (Active Geo-Replication secondary)</li>
+        <li>Eliminates read/write contention on primary SQL; improves write throughput</li>
+        <li>Opens path to materialized views and Redis-backed read models</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 5 — AGENTIC AI ════════════════════════ -->
+<section id="ai" class="ai-section">
+  <h2><span class="num">5</span> Top 5 Agentic AI Implementation Ideas</h2>
+
+  <div class="ai-ideas-grid">
+
+    <div class="ai-idea">
+      <div class="idea-num">Idea 01</div>
+      <h4>Intelligent Correspondence Routing Agent</h4>
+      <p>Replace the static <code>RoutingConfiguration</code> lookup table with an AI agent that dynamically selects the optimal delivery method and handler pipeline based on customer profile, document type, history, and real-time channel health.</p>
+      <ul>
+        <li>Analyzes past delivery outcomes per customer segment</li>
+        <li>Switches from Mail to ePresent automatically if mail failure rate is high</li>
+        <li>Learns from delivery confirmations fed back via DocumentStatusSync</li>
+        <li>Falls back to static routing if confidence score &lt; threshold</li>
+      </ul>
+      <span class="impact">Impact: ↑ First-attempt delivery rate | ↓ Failed correspondence</span>
+    </div>
+
+    <div class="ai-idea">
+      <div class="idea-num">Idea 02</div>
+      <h4>Autonomous Failure Remediation Agent</h4>
+      <p>An LLM-powered agent that monitors the Service Bus dead-letter queue and NServiceBus error queues, diagnoses root cause, and autonomously retries, reroutes, or escalates failed messages — with human approval for high-risk actions.</p>
+      <ul>
+        <li>Classifies failures: transient / data / external-service / config</li>
+        <li>Auto-fixes known patterns (bad address → verify → retry)</li>
+        <li>Drafts a remediation plan and requests approval for novel failures</li>
+        <li>Integrates with Teams / PagerDuty for human-in-the-loop escalation</li>
+      </ul>
+      <span class="impact">Impact: ↓ Mean Time to Recover | ↓ On-call burden</span>
+    </div>
+
+    <div class="ai-idea">
+      <div class="idea-num">Idea 03</div>
+      <h4>Natural Language Correspondence Query Agent</h4>
+      <p>An agent exposing a chat-style interface that lets operations staff query correspondence status using plain English instead of constructing API calls. Backed by Claude with tool-use to call existing CommManager API endpoints.</p>
+      <ul>
+        <li>"Show me all failed mail deliveries for claim 123456 this week"</li>
+        <li>"Retry all ePresent failures where email address was invalid"</li>
+        <li>"Generate a delivery success rate report by document type for Q2"</li>
+        <li>RBAC-gated: same OIDC roles as API; no new attack surface</li>
+      </ul>
+      <span class="impact">Impact: ↑ Ops productivity | ↓ Support ticket volume</span>
+    </div>
+
+    <div class="ai-idea">
+      <div class="idea-num">Idea 04</div>
+      <h4>Predictive DocID Pool Management Agent</h4>
+      <p>Replace the reactive threshold-based replenishment with an ML forecasting agent that predicts DocID consumption based on time-of-day, day-of-week, and upstream event patterns, pre-generating IDs before the pool depletes.</p>
+      <ul>
+        <li>Trains on historical <code>CorrespondenceRequest</code> volume data</li>
+        <li>Issues replenishment SOAP calls 15–30 min before predicted depletion</li>
+        <li>Eliminates the in-request DocID generation path entirely</li>
+        <li>Reduces SOAP call spikes; improves Documentum ECM relationship</li>
+      </ul>
+      <span class="impact">Impact: ↓ API latency p99 | ↓ DocID generation errors</span>
+    </div>
+
+    <div class="ai-idea">
+      <div class="idea-num">Idea 05</div>
+      <h4>AI-Powered VentureFusion Payload Validation &amp; Enrichment Agent</h4>
+      <p>An agent that intercepts the VentureFusion payload before <code>RequestCompositionHandler</code>, validates completeness against document-type-specific rules, auto-enriches missing optional fields from policy/claims data, and predicts whether VF will accept the submission.</p>
+      <ul>
+        <li>LLM-generated validation rules derived from VF rejection history</li>
+        <li>Auto-corrects common data quality issues (name casing, ZIP formatting)</li>
+        <li>Confidence-scored: only applies enrichment when confidence &gt; 95%</li>
+        <li>Logs enrichment decisions for audit trail compliance</li>
+      </ul>
+      <span class="impact">Impact: ↑ VF first-pass acceptance rate | ↓ Rejection rework</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 6 — AI ARCHITECTURE ═══════════════════ -->
+<section id="ai-arch" class="ai-section">
+  <h2><span class="num">6</span> Agentic AI — System Architecture</h2>
+
+  <div class="ai-diagram-wrapper">
+    <h3>Multi-Agent Architecture — ECCO Communication Manager AI Layer</h3>
+    <div class="mermaid">
+graph TB
+  subgraph CALLERS["Calling Systems &amp; Operators"]
+    CS["Partner Systems\nAPI Callers"]
+    OPS["Operations Staff\nChat Interface"]
+    SCHED["Scheduled Events\nTimer / Queue Triggers"]
+  end
+
+  subgraph APIM2["TrustAge APIM — Existing Gateway"]
+    GW["APIM Gateway\nJWT + WAF"]
+  end
+
+  subgraph AGENT_LAYER["AI Agent Orchestration Layer — Azure"]
+
+    subgraph ORCH["Agent Orchestrator"]
+      COORD["🧠 Coordinator Agent\nClaude claude-sonnet-4-6\n───────────────────────\n• Route intent to specialist agent\n• Manage multi-agent conversations\n• Human-in-the-loop checkpoints\n• Audit every agent decision"]
+    end
+
+    subgraph AGENTS["Specialist Agents"]
+      RA["🔀 Routing Agent\n(Idea 01)\n─────────────\nTool: GetRoutingConfig\nTool: GetDeliveryHistory\nTool: UpdateRoute\nModel: claude-haiku-4-5"]
+      FA["🔧 Failure Remediation Agent\n(Idea 02)\n──────────────────────────\nTool: GetDeadLetterMessages\nTool: ClassifyFailure\nTool: RetryMessage\nTool: EscalateToTeams\nModel: claude-sonnet-4-6"]
+      QA["💬 Query Agent\n(Idea 03)\n─────────────────\nTool: GetStatusByDocId\nTool: GetStatusByClaim\nTool: FilterCorrespondence\nTool: GenerateReport\nModel: claude-haiku-4-5"]
+      DA["📊 DocID Forecast Agent\n(Idea 04)\n─────────────────────────\nTool: GetPoolDepth\nTool: GetHistoricalVolume\nTool: TriggerReplenishment\nModel: claude-haiku-4-5"]
+      VA["✅ Payload Validation Agent\n(Idea 05)\n──────────────────────────\nTool: ValidateVFPayload\nTool: EnrichFromPolicyData\nTool: GetVFRejectionHistory\nModel: claude-sonnet-4-6"]
+    end
+
+    subgraph MEMORY["Agent Memory &amp; State"]
+      REDIS_AI["Redis\nConversation State\nShort-term Memory"]
+      COSMOS["Azure Cosmos DB\nLong-term Memory\nDecision History\nFeedback Loops"]
+      VEC["Azure AI Search\nVector Store\nSemantic Search over\nCorrespondence History"]
+    end
+
+    subgraph TOOLS["MCP Tool Server (Model Context Protocol)"]
+      MCP["CommManager Tool Server\n──────────────────────────────\n• POST /processcorrespondencerequest\n• GET  /status/docid/{id}\n• GET  /status/claim/{id}\n• POST /status/correspondencefilterrequest\n• POST /cache/warmup\n• GET  /deadletter/messages\n• POST /deadletter/retry\n• GET  /docid/pool/depth\n• GET  /vf/rejection-history\n• POST /notification/teams"]
+    end
+
+  end
+
+  subgraph EXISTING["Existing ECCO Infrastructure"]
+    APP2["CommManager API\nProcessRequestEndPoint"]
+    SQL2["Azure SQL"]
+    SB2["Azure Service Bus"]
+    VF2["VentureFusion"]
+    ECM2["Documentum ECM"]
+    KV2["Key Vault"]
+  end
+
+  subgraph OBS2["Observability"]
+    AI2["Application Insights\nAgent Traces"]
+    AUDIT["Audit Log DB\nEvery agent action\nHuman approvals"]
+  end
+
+  CS -->|"existing API calls"| GW
+  GW --> APP2
+  OPS -->|"Natural language"| COORD
+  SCHED -->|"Trigger events"| COORD
+
+  COORD --> RA & FA & QA & DA & VA
+  RA & FA & QA & DA & VA -->|"MCP tool calls"| MCP
+  MCP -->|"REST / SDK"| APP2 & SQL2 & SB2
+
+  RA & FA & QA & DA & VA <-->|"read/write"| REDIS_AI
+  RA & FA & QA & DA & VA <-->|"read/write"| COSMOS
+  QA <-->|"semantic search"| VEC
+
+  APP2 --> SQL2 & SB2 & VF2 & ECM2 & KV2
+
+  COORD & RA & FA & QA & DA & VA -->|"traces"| AI2
+  FA -->|"every action"| AUDIT
+
+  style CALLERS fill:#1a1a2e,stroke:#00d2ff,color:#fff
+  style APIM2 fill:#1a1a2e,stroke:#ef6c00,color:#fff
+  style AGENT_LAYER fill:#0d1b2a,stroke:#7b2ff7,color:#fff
+  style ORCH fill:#1a0533,stroke:#7b2ff7,color:#fff
+  style AGENTS fill:#001a0d,stroke:#00d2ff,color:#fff
+  style MEMORY fill:#1a0d00,stroke:#fdcb6e,color:#fff
+  style TOOLS fill:#001433,stroke:#00d2ff,color:#fff
+  style EXISTING fill:#1a1a2e,stroke:#adb5bd,color:#fff
+  style OBS2 fill:#0d001a,stroke:#e84393,color:#fff
+    </div>
+  </div>
+
+  <div class="ai-diagram-wrapper">
+    <h3>Agent Infrastructure — Azure Services Mapping</h3>
+    <div class="mermaid">
+graph LR
+  subgraph AZURE_AI["Azure AI Services"]
+    AOI["Azure OpenAI\nor\nAnthropic Claude API\nclaude-sonnet-4-6\nclaude-haiku-4-5"]
+    AISRCH["Azure AI Search\nVector Index\nSemantic Ranker"]
+    AOAI_EMB["Embeddings\ntext-embedding-3-large\nfor vector search"]
+  end
+
+  subgraph AGENT_INFRA["Agent Infrastructure — Azure"]
+    FUNC_AI["Azure Functions\nAgent Workers\n• CoordinatorFunction\n• RoutingAgentFunction\n• FailureAgentFunction\n• QueryAgentFunction\n• DocIDAgentFunction\n• ValidationAgentFunction"]
+    SB_AI["Azure Service Bus\nAgent Message Bus\n• agent-tasks topic\n• agent-results topic\n• human-approval queue"]
+    REDIS2["Azure Cache for Redis\nSession State\nL1 Cache"]
+    COSMOS2["Cosmos DB\nAgent Memory\nAudit Trail"]
+  end
+
+  subgraph SEC_AI["Security"]
+    KV_AI["Key Vault\nAnthropic API Key\nAOAI Endpoint Keys"]
+    MI_AI["Managed Identity\nAgent Worker Identity"]
+  end
+
+  subgraph HUMAN["Human-in-the-Loop"]
+    TEAMS["MS Teams\nApproval Cards\n(Adaptive Cards)"]
+    PORTAL["Admin Portal\nDecision Dashboard\nOverride Interface"]
+  end
+
+  FUNC_AI -->|"completions API"| AOI
+  FUNC_AI -->|"vector search"| AISRCH
+  AOAI_EMB --> AISRCH
+  FUNC_AI <-->|"pub/sub"| SB_AI
+  FUNC_AI <-->|"cache"| REDIS2
+  FUNC_AI <-->|"memory"| COSMOS2
+  FUNC_AI -->|"secrets"| KV_AI
+  MI_AI --> FUNC_AI
+  FUNC_AI -->|"approval request"| TEAMS
+  FUNC_AI -->|"audit"| PORTAL
+
+  style AZURE_AI fill:#0d1b2a,stroke:#00d2ff,color:#fff
+  style AGENT_INFRA fill:#0d1b2a,stroke:#7b2ff7,color:#fff
+  style SEC_AI fill:#0d1b2a,stroke:#fdcb6e,color:#fff
+  style HUMAN fill:#0d1b2a,stroke:#e84393,color:#fff
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════ SECTION 7 — AI PROCESS FLOWS ══════════════════ -->
+<section id="ai-flow" class="ai-section">
+  <h2><span class="num">7</span> Agentic AI — Process Flow Diagrams</h2>
+
+  <!-- Flow 1: Routing Agent -->
+  <div class="ai-diagram-wrapper">
+    <h3>Flow 1 — Intelligent Routing Agent (Idea 01)</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant API as CommManager API
+  participant COORD as Coordinator Agent
+  participant RA as Routing Agent
+  participant MEM as Agent Memory (Redis/Cosmos)
+  participant TOOLS as MCP Tool Server
+  participant SQL as Azure SQL
+  participant APIM as APIM / Caller
+
+  APIM->>API: POST /processcorrespondencerequest
+  API->>COORD: Dispatch: route_correspondence_request(payload)
+  COORD->>RA: Invoke Routing Agent with context
+
+  RA->>MEM: Recall: delivery history for CustomerID + DocumentType
+  MEM-->>RA: Last 90 days success/failure rates per channel
+
+  RA->>TOOLS: GetRoutingConfiguration(requestingSystemName)
+  TOOLS-->>RA: Static route config
+
+  RA->>RA: Reason over channels:\n- Mail success rate this customer = 72%\n- ePresent success rate = 96%\n- Mail: bad address flag = true\n→ Recommend: ePresent override
+
+  alt Confidence > 95%
+    RA->>COORD: Override route: ePresent pipeline
+    COORD->>TOOLS: UpdateRoutingDecision(corrId, reason, confidence)
+    TOOLS->>SQL: INSERT AgentRoutingDecision (audit)
+    COORD-->>API: Approved route override
+    API->>API: Use ePresent handler pipeline
+  else Confidence 70-95%
+    RA->>COORD: Suggest override + flag for review
+    COORD-->>API: Use static route; log suggestion
+  else Confidence < 70%
+    RA->>COORD: Insufficient data — use static route
+    COORD-->>API: Use static route
+  end
+
+  API-->>APIM: 202 Accepted (with AI routing metadata)
+
+  Note over RA,MEM: After delivery confirmation received:
+  RA->>MEM: Update delivery outcome → reinforce or penalize routing decision
+    </div>
+  </div>
+
+  <!-- Flow 2: Failure Remediation Agent -->
+  <div class="ai-diagram-wrapper">
+    <h3>Flow 2 — Autonomous Failure Remediation Agent (Idea 02)</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant SB as Service Bus DLQ
+  participant FA as Failure Remediation Agent
+  participant COORD as Coordinator Agent
+  participant TOOLS as MCP Tool Server
+  participant SQL as Azure SQL
+  participant TEAMS as MS Teams
+  participant HUMAN as On-Call Engineer
+
+  SB->>FA: Dead-letter message detected (trigger)
+  FA->>TOOLS: GetDeadLetterMessage(messageId)
+  TOOLS-->>FA: Message payload + error context + retry history
+
+  FA->>FA: Analyze failure:\n- Parse exception type\n- Check error pattern library\n- Cross-reference VF rejection history
+
+  alt Classified: Transient Network Error
+    FA->>COORD: Plan: exponential-backoff retry × 3
+    COORD->>TOOLS: RetryMessage(messageId, delaySeconds=30)
+    TOOLS-->>FA: Retry queued
+    FA->>SQL: INSERT RemediationLog (action=retry, confidence=98%)
+
+  else Classified: Bad Address
+    FA->>COORD: Plan: validate address → correct → retry
+    FA->>TOOLS: ValidateAddress(recipientAddress)
+    TOOLS-->>FA: Suggested correction
+    FA->>COORD: Confidence check on correction
+    alt High-confidence correction
+      COORD->>TOOLS: UpdatePayloadAndRetry(correctedPayload)
+      FA->>SQL: INSERT RemediationLog (action=address_corrected)
+    else Low-confidence
+      FA->>TEAMS: SendApprovalCard(correctionDetails, approveURL, rejectURL)
+      TEAMS->>HUMAN: Adaptive Card: "Approve address correction?"
+      HUMAN->>TEAMS: Approve / Reject
+      TEAMS->>COORD: ApprovalResult
+      COORD->>TOOLS: RetryMessage OR EscalateToTicket
+    end
+
+  else Classified: Unknown / Novel Failure
+    FA->>COORD: Cannot auto-remediate — escalate
+    FA->>TEAMS: SendAlertCard(failureDetails, runbookLink)
+    TEAMS->>HUMAN: High-priority alert with AI analysis summary
+    FA->>SQL: INSERT RemediationLog (action=escalated, aiAnalysis=...)
+    HUMAN->>TEAMS: Acknowledge + manual action
+  end
+
+  FA->>SQL: UPDATE RemediationLog (outcome)
+  FA->>FA: Update failure pattern memory for future classification
+    </div>
+  </div>
+
+  <!-- Flow 3: Query Agent -->
+  <div class="ai-diagram-wrapper">
+    <h3>Flow 3 — Natural Language Query Agent (Idea 03)</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant OPS as Operations Staff
+  participant CHAT as Chat Interface (Teams / Portal)
+  participant QA as Query Agent (Claude)
+  participant TOOLS as MCP Tool Server
+  participant API as CommManager API
+  participant REDIS as Redis Cache
+
+  OPS->>CHAT: "Show me all failed mail deliveries for\nclaim 456789 this week, grouped by error type"
+
+  CHAT->>QA: user_message + OIDC token (role-checked)
+
+  QA->>QA: Parse intent:\n• entity: ClaimNumber=456789\n• filter: DeliveryMethod=Mail, Status=Failed\n• time: last 7 days\n• grouping: by error type
+
+  QA->>REDIS: Check query cache (same params last 60s?)
+  REDIS-->>QA: Cache miss
+
+  QA->>TOOLS: GetCorrespondenceStatusByClaimNumber(456789, pageSize=50)
+  TOOLS->>API: GET /status/claim/456789
+  API-->>TOOLS: 23 records
+
+  QA->>QA: Filter, group, and format:\n• Transient Network: 8\n• Bad Address: 11\n• VF Rejection: 4
+
+  QA->>TOOLS: GetVFRejectionDetails(corrIds=[...4 ids...])
+  TOOLS->>API: POST /status/correspondencefilterrequest
+  API-->>TOOLS: VF rejection reason codes
+
+  QA->>REDIS: Cache result (60s TTL)
+
+  QA-->>CHAT: Structured response:\n"Found 23 failed mail deliveries for claim 456789\nthis week:\n• 11 Bad Address — recommend address validation\n• 8 Transient Errors — 6 auto-retried, 2 still pending\n• 4 VF Rejections — missing VersionCode field\n\nWould you like me to retry the transient failures\nor bulk-correct the bad addresses?"
+
+  OPS->>CHAT: "Yes, retry the transient failures"
+  CHAT->>QA: user_message: retry transient
+  QA->>TOOLS: RetryMessages(corrIds=[...8 ids...])
+  TOOLS-->>QA: 8 retries queued
+  QA-->>CHAT: "8 messages queued for retry. I'll notify you\nif any fail again."
+    </div>
+  </div>
+
+  <!-- Flow 4: DocID Forecast Agent -->
+  <div class="ai-diagram-wrapper">
+    <h3>Flow 4 — Predictive DocID Pool Management Agent (Idea 04)</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant SCHED as Timer (every 15 min)
+  participant DA as DocID Forecast Agent
+  participant TOOLS as MCP Tool Server
+  participant SQL as Azure SQL
+  participant ECM as Documentum ECM (SOAP)
+  participant COSMOS as Agent Memory (Cosmos DB)
+
+  SCHED->>DA: Trigger: forecast_docid_demand()
+
+  DA->>TOOLS: GetDocIDPoolDepth()
+  TOOLS->>SQL: SELECT COUNT(*) WHERE DocIdStatus='New'
+  SQL-->>DA: Current pool depth = 342
+
+  DA->>COSMOS: GetHistoricalVolumePatterns()
+  COSMOS-->>DA: Rolling 90-day request counts\nby hour-of-day + day-of-week
+
+  DA->>DA: Forecast model:\n• Current: Friday 2pm → historically high volume\n• Predicted demand next 60min: 280 DocIDs\n• Pool after 60min: 342 - 280 = 62 (below threshold 100)\n• Recommend: replenish NOW, batch=500
+
+  alt Predicted depletion within 60 min
+    DA->>TOOLS: TriggerDocIDReplenishment(count=500)
+    TOOLS->>ECM: SOAP: GenerateIDs(500)
+    ECM-->>TOOLS: 500 new DocIDs
+    TOOLS->>SQL: Bulk INSERT 500 DocIDs (status=New)
+    DA->>COSMOS: LogForecastAction(predicted=280, actual=pending, batchSize=500)
+  else Pool healthy (> 2x predicted demand)
+    DA->>COSMOS: LogForecastAction(action=no_op, confidence=92%)
+  end
+
+  Note over DA,COSMOS: After 60 minutes:
+  DA->>COSMOS: UpdateForecastAccuracy(predicted=280, actual=267)
+  DA->>DA: Retrain forecast weights (online learning)
+    </div>
+  </div>
+
+  <!-- Flow 5: Validation Agent -->
+  <div class="ai-diagram-wrapper">
+    <h3>Flow 5 — AI Payload Validation &amp; Enrichment Agent (Idea 05)</h3>
+    <div class="mermaid">
+sequenceDiagram
+  participant SB as Service Bus
+  participant RC as RequestCompositionHandler
+  participant VA as Validation Agent
+  participant TOOLS as MCP Tool Server
+  participant VF as VentureFusion API
+  participant SQL as Azure SQL
+  participant COSMOS as Rejection History (Cosmos)
+
+  SB->>RC: RequestCompositionHandlerMessage received
+
+  RC->>VA: ValidateAndEnrichPayload(ventureFusionPayload, documentType)
+
+  VA->>COSMOS: GetVFRejectionHistory(documentType=last 500 rejections)
+  COSMOS-->>VA: Common rejection patterns:\n• Missing VersionCode: 34%\n• Invalid RecipientZIP format: 22%\n• RecipientFullName empty: 18%
+
+  VA->>VA: Run validation rules (LLM-generated from rejection history):\n✓ VersionCode present: YES\n✓ ZIP format (5 or 9 digit): YES\n✗ RecipientFullName: EMPTY\n  → Can enrich from FirstName+LastName
+
+  alt Validation passes (no issues)
+    VA-->>RC: Approved: pass-through to VF
+  else Issues found, high-confidence fix available
+    VA->>VA: Apply enrichment:\n  RecipientFullName = "John Smith"\n  Confidence: 99.2%
+    VA->>TOOLS: LogEnrichmentAction(field, original, enriched, confidence)
+    TOOLS->>SQL: INSERT EnrichmentAuditLog
+    VA-->>RC: Enriched payload (corrected)
+  else Issues found, low-confidence
+    VA-->>RC: Flag issue + partial enrichment\n(proceed with warning logged)
+  else Critical validation failure
+    VA->>TOOLS: CreateNonRecoverableErrorLog(reason, payload)
+    TOOLS->>SQL: INSERT NonRecoverableErrorLog
+    VA-->>RC: Reject payload (throw PermanentFailureException)
+  end
+
+  RC->>VF: POST FusionApi/DataRecords (validated/enriched payload)
+  VF-->>RC: Response
+
+  alt VF returns rejection
+    RC->>VA: ReportVFRejection(rejectionCode, payload)
+    VA->>COSMOS: StoreRejectionPattern(reason, payload_snapshot)
+    VA->>VA: Update validation rules (online learning)
+  else VF accepts
+    RC->>VA: ReportVFSuccess(corrId)
+    VA->>COSMOS: StoreSuccessPattern(documentType, payload_fingerprint)
+  end
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<footer>
+  ECCO Communication Manager · Architecture Reference Document · Generated 2026-06-06 · Azure East US 2
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    flowchart: { curve: 'basis', padding: 20 },
+    sequence: { actorMargin: 60, messageMargin: 40, useMaxWidth: true },
+    themeVariables: {
+      primaryColor: '#1565c0',
+      primaryTextColor: '#fff',
+      primaryBorderColor: '#0d47a1',
+      lineColor: '#546e7a',
+      secondaryColor: '#e3f2fd',
+      tertiaryColor: '#f4f7fb',
+      fontSize: '13px'
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<div class="drawer-backdrop" ng-if="$ctrl.recordId" ng-click="$event.target === $event.currentTarget && $ctrl.onClose()">
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="record-panel-title" ng-keydown="$event.key === 'Escape' && $ctrl.onClose()">
+    <header class="drawer__head">
+      <div>
+        <div class="drawer__eyebrow">Correspondence record</div>
+        <h2 class="drawer__title" id="record-panel-title">{{ $ctrl.details.record.docId || $ctrl.recordId }}</h2>
+        <div class="drawer__sub" ng-if="$ctrl.details">
+          <span class="status-badge" ng-class="'status-badge--' + ($ctrl.details.record.latestStatus | ccStatusTone)">{{ $ctrl.details.record.latestStatus || 'No status' }}</span>
+          <span ng-if="$ctrl.details.record.claimNumber">Claim {{ $ctrl.details.record.claimNumber }}</span>
+          <span>{{ $ctrl.details.record.requestingDomainName }}</span>
+        </div>
+      </div>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.onClose()" cc-focus-when="true">×</button>
+    </header>
+
+    <div class="tabs drawer__tabs" role="tablist">
+      <button type="button" class="tabs__tab" role="tab" ng-repeat="t in [{ id: 'overview', label: 'Overview' }, { id: 'timeline', label: 'Timeline' }, { id: 'payload', label: 'Payload' }, { id: 'pdf', label: 'PDF' }, { id: 'activity', label: 'Activity' }] track by t.id"
+              ng-class="{ 'is-active': $ctrl.tab === t.id }" aria-selected="{{ $ctrl.tab === t.id }}" ng-click="$ctrl.selectTab(t.id)">
+        {{ t.label }}<span class="tabs__count" ng-if="t.id === 'timeline' && $ctrl.timeline.length">{{ $ctrl.timeline.length }}</span><span class="tabs__count" ng-if="t.id === 'activity' && $ctrl.activity.length">{{ $ctrl.activity.length }}</span>
+      </button>
+    </div>
+
+    <div class="drawer__body">
+      <div class="empty-state" ng-if="$ctrl.loading && !$ctrl.details"><span class="spinner"></span> Loading…</div>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.error">{{ $ctrl.error }}</div>
+
+      <section ng-if="$ctrl.details && $ctrl.tab === 'overview'">
+        <dl class="facts">
+          <dt>Correspondence Id</dt><dd class="mono">{{ $ctrl.details.record.correspondenceId }}</dd>
+          <dt>Doc Id</dt><dd>{{ $ctrl.details.record.docId || '—' }}</dd>
+          <dt>Claim number</dt><dd>{{ $ctrl.details.record.claimNumber || '—' }}</dd>
+          <dt>Customer id</dt><dd>{{ $ctrl.details.record.customerId || '—' }}</dd>
+          <dt>Requesting system</dt><dd>{{ $ctrl.details.record.requestingDomainName || '—' }}</dd>
+          <dt>Delivery method</dt><dd>{{ $ctrl.details.record.deliveryMethod || '—' }}</dd>
+          <dt>Created</dt><dd>{{ $ctrl.details.record.requestCreationTS | ccDateTime }}</dd>
+          <dt>Document type code</dt><dd>{{ $ctrl.details.record.archiveDocumentTypeCode || '—' }}<span ng-if="$ctrl.details.record.archiveDocumentSubTypeCode"> / {{ $ctrl.details.record.archiveDocumentSubTypeCode }}</span></dd>
+          <dt>Version code</dt><dd>{{ $ctrl.details.record.versionCode || '—' }}</dd>
+          <dt>Delivery response id</dt><dd class="mono">{{ $ctrl.details.record.vfResponseId || '—' }}</dd>
+        </dl>
+        <div class="drawer__actions">
+          <button type="button" class="btn btn--sm btn--outline" ng-click="$ctrl.tab = 'timeline'">See the timeline</button>
+          <button type="button" class="btn btn--sm btn--outline" ng-if="$ctrl.canExplain" ng-click="$ctrl.onExplain({ row: $ctrl.row() })">✨ Explain with AI</button>
+        </div>
+      </section>
+
+      <section ng-if="$ctrl.details && $ctrl.tab === 'timeline'">
+        <div class="empty-state" ng-if="!$ctrl.timeline.length">No status history recorded yet.</div>
+        <ol class="timeline">
+          <li class="timeline__item" ng-repeat="h in $ctrl.timeline track by $index" ng-class="['timeline__item--' + h.css, { 'is-current': h.current }]">
+            <div class="timeline__dot" aria-hidden="true"></div>
+            <div class="timeline__content">
+              <div class="timeline__status">{{ h.status }} <span class="timeline__code">{{ h.statusCode }}</span>
+                <span class="timeline__now" ng-if="h.current">current</span></div>
+              <div class="timeline__meta">
+                {{ h.updatedTS | ccDateTime }}<span ng-if="h.updatedBy"> · by {{ h.updatedBy }}</span>
+                <span ng-if="h.lasted"> · lasted {{ h.lasted }}</span>
+              </div>
+              <div class="timeline__meta mono" ng-if="h.eventInstanceId">Event {{ h.eventInstanceId }}</div>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <section ng-if="$ctrl.details && $ctrl.tab === 'payload'">
+        <div class="notice notice--info" ng-if="!$ctrl.details.payload">🔒 {{ $ctrl.details.payloadHiddenReason || 'No payload is stored for this record.' }}</div>
+        <pre class="code-block code-block--json drawer__code" ng-if="$ctrl.payloadPretty">{{ $ctrl.payloadPretty }}</pre>
+      </section>
+
+      <section ng-if="$ctrl.details && $ctrl.tab === 'pdf'">
+        <div class="notice notice--info" ng-if="!$ctrl.details.pdf">PDFs aren't set up on this server.</div>
+        <div ng-if="$ctrl.details.pdf">
+          <dl class="facts">
+            <dt>State</dt><dd>{{ $ctrl.details.pdf.status === 'None' ? 'Not generated yet' : $ctrl.details.pdf.status }}</dd>
+            <dt ng-if="$ctrl.details.pdf.generatedUtc">Generated</dt><dd ng-if="$ctrl.details.pdf.generatedUtc">{{ $ctrl.details.pdf.generatedUtc | date:'MM/dd/yyyy HH:mm' }}</dd>
+            <dt ng-if="$ctrl.details.pdf.sizeBytes">Size</dt><dd ng-if="$ctrl.details.pdf.sizeBytes">{{ ($ctrl.details.pdf.sizeBytes / 1024) | number:1 }} KB</dd>
+            <dt ng-if="$ctrl.details.pdf.lastError">Last error</dt><dd ng-if="$ctrl.details.pdf.lastError">{{ $ctrl.details.pdf.lastError }}</dd>
+          </dl>
+          <div class="drawer__actions">
+            <button type="button" class="btn btn--sm btn--primary" ng-click="$ctrl.onOpenPdf({ row: $ctrl.row() })">
+              {{ $ctrl.details.pdf.status === 'Generated' ? 'View PDF' : 'Generate PDF' }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section ng-if="$ctrl.details && $ctrl.tab === 'activity'">
+        <div class="empty-state" ng-if="!$ctrl.activity.length">No portal activity on this record yet.</div>
+        <ul class="activity">
+          <li ng-repeat="a in $ctrl.activity track by a.auditId" ng-class="'activity__item--' + (a.outcome | lowercase)">
+            <div class="activity__label">{{ a.label }}</div>
+            <div class="activity__meta">{{ a.occurredUtc | date:'MM/dd/yyyy HH:mm' }} · {{ a.userName || 'system' }}</div>
+            <div class="activity__detail" ng-if="a.detail">{{ a.detail }}</div>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </aside>
+</div>

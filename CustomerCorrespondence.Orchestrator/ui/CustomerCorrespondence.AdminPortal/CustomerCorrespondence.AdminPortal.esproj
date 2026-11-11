@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6578810">
+  <PropertyGroup>
+    <StartupCommand>npm start</StartupCommand>
+    <!-- Do not fail the orchestrator solution build if this portal has no build script. -->
+    <BuildCommand>npm run build --if-present</BuildCommand>
+    <ShouldRunNpmInstall>false</ShouldRunNpmInstall>
+  </PropertyGroup>
+</Project>

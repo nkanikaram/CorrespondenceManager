@@ -1,0 +1,269 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+  
+
+pool: 
+  vmImage: windows-latest
+
+resources:
+ repositories:
+   - repository: self
+   - repository: AzureAPIM
+     name: Internal Open Source/AzureAPIM
+     type: git
+     ref: main
+
+variables:
+  - template: Variables/APIM_Release.yml
+
+stages:
+#
+# Deploy API to DEV
+#
+- stage: DeployAPIToDev
+  displayName: 'Deploy API to Dev'
+  variables:
+  - template: Variables/APIM_Dev.yml
+  jobs:
+  - deployment: deployapidef
+    displayName: 'Deploy API To Dev'
+    environment: APIM-DEV
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - checkout: AzureAPIM
+          - task: ReplaceTokens@1
+            inputs:
+              sourcePath: '$(FolderPath)'
+              filePattern: '*'
+              tokenRegex: '__(\w+)__'
+          - task: AzurePowerShell@5
+            displayName: 'Create API'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/CreateApiFromDefinitions.ps1'
+              ScriptArguments: '-FileName "$(API_Def)" -Environment "$(Environment)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Policy'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/DeployPolicy.ps1'
+              ScriptArguments: '-FileName "$(API_Def)" -Environment "$(Environment)" -PolicyFolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/CreateProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add API to Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/AddApiToProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add Group to Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/AddGroupToProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+
+- stage: DeployAPIToDemo
+  displayName: 'Deploy API to Demo'
+  dependsOn: DeployAPIToDev
+  variables:
+  - template: Variables/APIM_Demo.yml
+  jobs:
+  - deployment: deployapidef
+    displayName: 'Deploy API To Demo'
+    environment: APIM-DEMO
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - checkout: AzureAPIM
+          - task: ReplaceTokens@1
+            inputs:
+              sourcePath: '$(FolderPath)'
+              filePattern: '*'
+              tokenRegex: '__(\w+)__'
+          - task: AzurePowerShell@5
+            displayName: 'Create API'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/CreateApiFromDefinitions.ps1'
+              ScriptArguments: '-FileName "$(API_Def)" -Environment "$(Environment)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Policy'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/DeployPolicy.ps1'
+              ScriptArguments: '-FileName "$(API_Def)" -Environment "$(Environment)" -PolicyFolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/CreateProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add API to Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/AddApiToProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add Group to Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/AddGroupToProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+
+- stage: DeployAPIToPROD
+  displayName: 'Deploy API to Prod'
+  dependsOn: DeployAPIToDemo
+  variables:
+  - template: Variables/APIM_Prod.yml
+  jobs:
+  - deployment: deployapidef
+    displayName: 'Deploy API To Prod'
+    environment: APIM-PROD
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - checkout: AzureAPIM
+          - task: ReplaceTokens@1
+            inputs:
+              sourcePath: '$(FolderPath)'
+              filePattern: '*'
+              tokenRegex: '__(\w+)__'
+          - task: AzurePowerShell@5
+            displayName: 'Create API'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/CreateApiFromDefinitions.ps1'
+              ScriptArguments: '-FileName "$(API_Def)" -Environment "$(Environment)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Policy'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/DeployPolicy.ps1'
+              ScriptArguments: '-FileName "$(API_Def)" -Environment "$(Environment)" -PolicyFolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/CreateProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add API to Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/AddApiToProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add Group to Product'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/AddGroupToProduct.ps1'
+              ScriptArguments: '-FileName "$(Product_def)" -Environment "$(Environment)" -FolderPath "$(FolderPath)"'
+              azurePowerShellVersion: 'LatestVersion'
+#
+#Delete API to DEV
+#
+- stage: DeleteAPIToDev
+  displayName: 'Delete API to Dev'
+  dependsOn: ''
+  variables:
+  - template: Variables/APIM_Dev.yml
+  jobs:
+  - deployment: deleteapi
+    displayName: 'Delete API To Dev'
+    environment: APIM-DEV
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - checkout: AzureAPIM
+          - task: ReplaceTokens@1
+            inputs:
+              sourcePath: '$(FolderPath)'
+              filePattern: '*'
+              tokenRegex: '__(\w+)__'
+          - task: AzurePowerShell@5
+            displayName: 'Delete API'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/RemoveAPI.ps1'
+              ScriptArguments: '-APIName "CommManagerAPI" -ApiVersion "$(ApimVersionToDelete)" -Environment "$(Environment)"'
+              azurePowerShellVersion: 'LatestVersion'
+#
+#Delete API to Demo
+#
+- stage: DeleteAPIToDemo
+  displayName: 'Delete API to Demo'
+  dependsOn: ''
+  variables:
+  - template: Variables/APIM_Demo.yml
+  jobs:
+  - deployment: deleteapi
+    displayName: 'Delete API To Demo'
+    environment: APIM-DEMO
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          - checkout: AzureAPIM
+          - task: ReplaceTokens@1
+            inputs:
+              sourcePath: '$(FolderPath)'
+              filePattern: '*'
+              tokenRegex: '__(\w+)__'
+          - task: AzurePowerShell@5
+            displayName: 'Delete API'
+            inputs:
+              azureSubscription: 'Corporate NonProd Corporate'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(System.DefaultWorkingDirectory)/AzureAPIM/RemoveAPI.ps1'
+              ScriptArguments: '-APIName "CommManagerAPI" -ApiVersion "$(ApimVersionToDelete)" -Environment "$(Environment)"'
+              azurePowerShellVersion: 'LatestVersion'

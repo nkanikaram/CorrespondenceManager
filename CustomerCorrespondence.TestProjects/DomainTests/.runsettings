@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <ASPNETCORE_ENVIRONMENT>Testing</ASPNETCORE_ENVIRONMENT>
+    </EnvironmentVariables>
+  </RunConfiguration>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <CodeCoverage>
+            <ModulePaths>
+              <Include>
+                <ModulePath>.*CustomerCorrespondence.Application.dll$</ModulePath>
+                <ModulePath>.*CustomerCorrespondence.Domain.dll$</ModulePath>
+                <ModulePath>.*CustomerCorrespondence.Infrastructure.dll$</ModulePath>
+              </Include>
+              <Exclude>
+                <ModulePath>.*moq.dll$</ModulePath>
+              </Exclude>
+            </ModulePaths>
+            <CompanyNames>
+              <Exclude>
+                <CompanyName>.*microsoft.*</CompanyName>
+              </Exclude>
+            </CompanyNames>
+            <Files>
+              <Exclude>
+                <File>.*Program.cs$</File>
+                <File>.*KeyVaultHealthCheck.cs$</File>
+                <File>.*ServiceBusHealthCheck.cs$</File>
+                <File>.*NServiceBusLicenseProvider.cs$</File>
+                <File>.*SecretsCacheService.cs$</File>                
+                <File>.*GlobalClass.cs$</File> <!-- Exclude global class -->
+              </Exclude>
+            </Files>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

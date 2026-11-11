@@ -1,0 +1,539 @@
+trigger: none
+
+pool: Atlashostedagents
+
+resources:
+  repositories:
+  - repository: Atlas
+    type: git
+    name: SecureCloudEnablement/Atlas
+    ref: Releases/Current/Latest
+
+  - repository: ECCO-CommunicationManager
+    type: git
+    name: CorporateServices/ECCO-CommunicationManager
+    ref: main
+
+parameters:
+  - name: Environment
+    displayName: "Environment to deploy"
+    type: string
+    default: DVLP
+    values:
+      - DVLP
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscriptions to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - name: RG_ENVCODE
+      value: D03
+    - name: AG_WAF_NAME
+      value: 'AGWAF-CMFG-EA2-NP1-$(AG_SHORT_NAME)'
+    - name: AG_WAF_RG_NAME
+      value: '$(RG_APP_NAME)'
+    - name: VNET_RG_NAME
+      value: 'RG-CMFG-NP1-Atlas-Infrastructure'
+    - name: SSL_CERTIFICATE_NAME
+      value: 'commmanager-trustagedev'
+    - name: HOST_NAME
+      value: 'commmanager.trustagedev.com'
+    - name: APP_INCLUDE_STAGING_SLOT
+      value: 'false'     
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: RG_ENVCODE
+      value: M01
+    - name: AG_WAF_NAME
+      value: 'AGWAF-CMFG-EA2-NP1-$(AG_SHORT_NAME)'
+    - name: AG_WAF_RG_NAME
+      value: '$(RG_APP_NAME)'
+    - name: VNET_RG_NAME
+      value: 'RG-CMFG-NP1-Atlas-Infrastructure'
+    - name: SSL_CERTIFICATE_NAME
+      value: 'commmanager-trustagedemo'
+    - name: HOST_NAME
+      value: 'commmanager.trustagedemo.com'
+    - name: APP_INCLUDE_STAGING_SLOT
+      value: 'false'         
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: RG_ENVCODE
+      value: P01
+    - name: AG_WAF_NAME
+      value: 'AGWAF-CMFG-EA2-PR1-$(AG_SHORT_NAME)'
+    - name: AG_WAF_RG_NAME
+      value: '$(RG_APP_NAME)'
+    - name: VNET_RG_NAME
+      value: 'RG-CMFG-PR1-Atlas-Infrastructure'
+    - name: SSL_CERTIFICATE_NAME
+      value: 'commmanager-trustage'
+    - name: HOST_NAME
+      value: 'commmanager.trustage.com'
+    - name: APP_INCLUDE_STAGING_SLOT
+      value: 'true'
+  - name: atlasSrcCheckoutPath
+    value: 's/Atlas'
+  - name: atlasSrcRoot
+    value: '$(Agent.BuildDirectory)/s/Atlas'
+  - name: IDENTITY_NAME
+    value: 'MI-$(RG_ENVCODE)-ECCO'
+  - name: KV_NAME
+    value: 'kv-$(RG_ENVCODE)-ECCO'
+  - name: RG_APP_NAME
+    value: 'RG-CMFG-$(RG_ENVCODE)-ECCO'
+  - name: LOCATION
+    value: 'East US 2'
+  - name: RG_ASSET_TAG
+    value: '000095520'
+  - name: RG_ROLE_GROUP
+    value: 'R-App-ECCO-Developers-LSA'
+  - name: RG_NOTIFICATION_EMAIL_LIST
+    value: 'DS-ECCO'
+  - name: RELEASE_REQUESTEDFOREMAIL
+    value: 'MB-ECCO'
+  - name: ASP_NAME
+    value: 'ASP-$(RG_ENVCODE)-ECCO'
+  - name: APP_NAME
+    value: 'AS-CMFG-$(RG_ENVCODE)-ECCO'
+  - name: AIS_NAME
+    value: 'ais-$(RG_ENVCODE)-ECCO'
+  - name: APP_RG_NAME
+    value: '$(RG_APP_NAME)'
+  - name: KV_RG_NAME
+    value: '$(RG_APP_NAME)'
+  - name: IDENTITY_RG_NAME
+    value: '$(RG_APP_NAME)'
+  - name: ASP_RG_NAME
+    value: '$(RG_APP_NAME)'
+  - name: AIS_RG_NAME
+    value: '$(RG_APP_NAME)'
+  - name: AG_SHORT_NAME
+    value: 'ECCO-DEFAULT-WAF'
+  - name: VNET_NAME
+    value: 'VNet-CMFG-Atlas-Atlantis'
+  - name: FORCE_AG_DEFAULT_OVERRIDE
+    value: 'true'
+  - name: USE_PORT_VAULT_SSL
+    value: 'true'
+  - name: selfSrcCheckoutPath
+    value: s/ECCO-CommunicationManager
+  - name: selfSrcRoot
+    value: $(Agent.BuildDirectory)/s/ECCO-CommunicationManager
+  # - name: AG_WAF_POLICY_RULEGROUP_OVERRIDES_FILE
+  #   value: '$(selfSrcRoot)/Build/Pipelines/WAF_OWASP_Policy_Overrides.json'
+  - name: AG_WAF_POLICY_BOT_PROTECTION_OVERRIDES_FILE
+    value: '$(selfSrcRoot)/Build/Pipelines/WAF_Policy_Overrides.json'
+  - name: WEB_APP_PRIVATE_ACCESS
+    value: 'true'
+stages:
+  - stage: DVLP
+    jobs:
+    #Deploy Resource Group
+    - job: DVLPResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: deployAzureResourceGroup@3
+        displayName: 'CMFG Deploy Azure Resource Group.'
+        inputs:
+          ConnectedServiceNameARM: '${{ parameters.Subscription }}'
+          rgType: standard
+          enableForAtlas: atlasTrue
+          ResourceGroupName: '$(RG_APP_NAME)'
+          appDescription: 'ECCO Resource Group'
+          environmentCode: '$(RG_ENVCODE)'
+          cmdbAssetTag: '$(RG_ASSET_TAG)'
+          roleGroup: '$(RG_ROLE_GROUP)'
+          atlasEmailGroup: '$(RG_NOTIFICATION_EMAIL_LIST)'
+          atlaslocation: '$(LOCATION)'
+    # Deploy Managed Identity
+    - job: DeployDVLPManagedIdentity
+      dependsOn: DVLPResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create $(IDENTITY_NAME)'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/ManagedIdentity/deployManagedIdentity.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy App Insights
+    - job: DeployDVLPAppInsights
+      dependsOn: DVLPResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create App Insights'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppInsights/deployAppInsights.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy Key Vault and Set Permissions
+    - job: DVLPKeyVault
+      dependsOn: DVLPResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Deploy Key Vault'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/deployKeyVault.ps1'
+          azurePowerShellVersion: LatestVersion
+    #Set Key Vault Permissions
+    - job: DVLPKeyVaultPermissions
+      dependsOn: DVLPKeyVault
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: Grant $(IDENTITY_NAME) to KeyVault $(KV_NAME)
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/operations/addAccessPolicy.ps1'
+          ScriptArguments: '-VaultName $(KV_NAME) -Identity $(IDENTITY_NAME)'
+          azurePowerShellVersion: LatestVersion
+      - task: AzurePowerShell@5
+        displayName: 'Deploy RoleGroup Permissions'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptType: 'FilePath'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/operations/addAccessPolicy.ps1'
+          ScriptArguments: '-VaultName $(KV_NAME) -Identity $(RG_ROLE_GROUP)'
+          azurePowerShellVersion: 'LatestVersion'
+    # Deploy App Service Plan
+    - job: DeployDVLPAppServicePlan
+      dependsOn: DVLPKeyVaultPermissions
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create App Service Plan'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppServicePlan/deployAppServicePlan.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy AGWAF & App Service with deployment slots
+    - job: DVLPWebApp
+      dependsOn: DeployDVLPAppServicePlan
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - checkout: self
+        displayName: 'Get policy overrides json files'
+        path: $(selfSrcCheckoutPath) 
+      - task: AzurePowerShell@5
+        displayName: 'Deploy AGWAF'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppGateway/WAFv2/deployAzureWAFv2.ps1'
+          azurePowerShellVersion: LatestVersion
+      - task: AzurePowerShell@5
+        displayName: "Deploy Atlas Web App with Slot"
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/WebApp/deployWebApp.ps1'
+          azurePowerShellVersion: LatestVersion
+      - task: AzureCLI@2
+        displayName: 'Enable App Service Health Check (Windows)'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          scriptType: 'ps'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            $resourceGroup = "$(RGName)"
+            $appName = "$(AppName)"
+            $healthCheckPath = "/api/commmanager/healthcheck"
+            az resource update `
+            --resource-group $resourceGroup `
+            --resource-type "Microsoft.Web/sites" `
+            --name $appName `
+            --set properties.siteConfig.healthCheckPath=$healthCheckPath
+
+  - stage: DEMO
+    jobs:
+    # Deploy Resource Group
+    - job: DEMOResourceGroup
+      steps:
+      - task: deployAzureResourceGroup@3
+        displayName: 'CMFG Deploy Azure Resource Group.'
+        inputs:
+          ConnectedServiceNameARM: '${{ parameters.Subscription }}'
+          rgType: standard
+          enableForAtlas: atlasTrue
+          ResourceGroupName: '$(RG_APP_NAME)'
+          appDescription: 'ECCO Resource Group'
+          environmentCode: '$(RG_ENVCODE)'
+          cmdbAssetTag: '$(RG_ASSET_TAG)'
+          roleGroup: '$(RG_ROLE_GROUP)'
+          atlasEmailGroup: '$(RG_NOTIFICATION_EMAIL_LIST)'
+          atlaslocation: '$(LOCATION)'
+    # Deploy Managed Identity
+    - job: DeployDEMOManagedIdentity
+      dependsOn: DEMOResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create $(IDENTITY_NAME)'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/ManagedIdentity/deployManagedIdentity.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy App Insights
+    - job: DeployDEMOAppInsights
+      dependsOn: DEMOResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create App Insights'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppInsights/deployAppInsights.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy Key Vault and Set Permissions
+    - job: DEMOKeyVault
+      dependsOn: DEMOResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Deploy Key Vault'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/deployKeyVault.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Set Key Vault Permissions
+    - job: DEMOKeyVaultPermissions
+      dependsOn: DEMOKeyVault
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: Grant $(IDENTITY_NAME) to KeyVault $(KV_NAME)
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/operations/addAccessPolicy.ps1'
+          ScriptArguments: '-VaultName $(KV_NAME) -Identity $(IDENTITY_NAME)'
+          azurePowerShellVersion: LatestVersion
+      - task: AzurePowerShell@5
+        displayName: 'Deploy RoleGroup Permissions'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptType: 'FilePath'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/operations/addAccessPolicy.ps1'
+          ScriptArguments: '-VaultName $(KV_NAME) -Identity $(RG_ROLE_GROUP)'
+          azurePowerShellVersion: 'LatestVersion'
+    # Deploy App Service Plan
+    - job: DeployDEMOAppServicePlan
+      dependsOn: DEMOResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create App Service Plan'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppServicePlan/deployAppServicePlan.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy AGWAF & App Service with deployment slots
+    - job: DEMOWebApp
+      dependsOn: DeployDEMOAppServicePlan
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - checkout: self
+        displayName: 'Get policy overrides json files'
+        path: $(selfSrcCheckoutPath) 
+      - task: AzurePowerShell@5
+        displayName: 'Deploy AGWAF'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppGateway/WAFv2/deployAzureWAFv2.ps1'
+          azurePowerShellVersion: LatestVersion
+      - task: AzurePowerShell@5
+        displayName: "Deploy Atlas Web App with Slot"
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/WebApp/deployWebApp.ps1'
+          azurePowerShellVersion: LatestVersion
+      - task: AzureCLI@2
+        displayName: 'Enable App Service Health Check (Windows)'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          scriptType: 'ps'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            $resourceGroup = "$(RGName)"
+            $appName = "$(AppName)"
+            $healthCheckPath = "/api/commmanager/healthcheck"
+            az resource update `
+            --resource-group $resourceGroup `
+            --resource-type "Microsoft.Web/sites" `
+            --name $appName `
+            --set properties.siteConfig.healthCheckPath=$healthCheckPath
+  - stage: PROD
+    jobs:
+    # Deploy Resource Group
+    - job: PRODResourceGroup
+      steps:
+      - task: deployAzureResourceGroup@3
+        displayName: 'CMFG Deploy Azure Resource Group.'
+        inputs:
+          ConnectedServiceNameARM: '${{ parameters.Subscription }}'
+          rgType: standard
+          enableForAtlas: atlasTrue
+          ResourceGroupName: '$(RG_APP_NAME)'
+          appDescription: 'ECCO Resource Group'
+          environmentCode: '$(RG_ENVCODE)'
+          cmdbAssetTag: '$(RG_ASSET_TAG)'
+          roleGroup: '$(RG_ROLE_GROUP)'
+          atlasEmailGroup: '$(RG_NOTIFICATION_EMAIL_LIST)'
+          atlaslocation: '$(LOCATION)'
+    # Deploy Managed Identity
+    - job: DeployPRODManagedIdentity
+      dependsOn: PRODResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create $(IDENTITY_NAME)'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/ManagedIdentity/deployManagedIdentity.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy App Insights
+    - job: DeployPRODAppInsights
+      dependsOn: PRODResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create App Insights'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppInsights/deployAppInsights.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy Key Vault and Set Permissions
+    - job: PRODKeyVault
+      dependsOn: PRODResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Deploy Key Vault'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/deployKeyVault.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Set Key Vault Permissions
+    - job: PRODKeyVaultPermissions
+      dependsOn: PRODKeyVault
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: Grant $(IDENTITY_NAME) to KeyVault $(KV_NAME)
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/operations/addAccessPolicy.ps1'
+          ScriptArguments: '-VaultName $(KV_NAME) -Identity $(IDENTITY_NAME)'
+          azurePowerShellVersion: LatestVersion
+      - task: AzurePowerShell@5
+        displayName: 'Deploy RoleGroup Permissions'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptType: 'FilePath'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/KeyVault/operations/addAccessPolicy.ps1'
+          ScriptArguments: '-VaultName $(KV_NAME) -Identity $(RG_ROLE_GROUP)'
+          azurePowerShellVersion: 'LatestVersion'
+    # Deploy App Service Plan
+    - job: DeployPRODAppServicePlan
+      dependsOn: PRODResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: AzurePowerShell@5
+        displayName: 'Create App Service Plan'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppServicePlan/deployAppServicePlan.ps1'
+          azurePowerShellVersion: LatestVersion
+    # Deploy AGWAF & App Service with deployment slots
+    - job: PRODWebApp
+      dependsOn: DeployPRODAppServicePlan
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - checkout: self
+        displayName: 'Get policy overrides json files'
+        path: $(selfSrcCheckoutPath) 
+      - task: AzurePowerShell@5
+        displayName: 'Deploy AGWAF'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/AppGateway/WAFv2/deployAzureWAFv2.ps1'
+          azurePowerShellVersion: LatestVersion
+      - task: AzurePowerShell@5
+        displayName: "Deploy Atlas Web App with Slot"
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          ScriptPath: '$(atlasSrcRoot)/Deploy/WebApp/deployWebApp.ps1'
+          azurePowerShellVersion: LatestVersion
+      - task: AzureCLI@2
+        displayName: 'Enable App Service Health Check (Windows)'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          scriptType: 'ps'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+              $resourceGroup = "$(RGName)"
+              $appName = "$(AppName)"
+              $healthCheckPath = "/api/commmanager/healthcheck"
+              az resource update `
+              --resource-group $resourceGroup `
+              --resource-type "Microsoft.Web/sites" `
+              --name $appName `
+              --set properties.siteConfig.healthCheckPath=$healthCheckPath       
+    # Add Atlas Allowed Subnets to Key Vault
+    - job: AddAtlasAllowedSubnets
+      dependsOn: PRODWebApp
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: '${{ parameters.Subscription }}'
+            ScriptType: 'FilePath'
+            ScriptPath: '$(atlasSrcRoot)/Deploy/Common/AddAtlasAllowedSubnet.ps1'
+            ScriptArguments: '-targetResourceName $(KV_NAME) -targetResourceGroup $(RG_APP_NAME) -sourceResourceName $(APP_NAME) -sourceResourceGroup $(RG_APP_NAME)'
+            azurePowerShellVersion: 'LatestVersion'

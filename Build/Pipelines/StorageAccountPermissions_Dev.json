@@ -1,0 +1,16 @@
+[
+    [
+        {
+            "identity": "SP-D01-NP",
+            "permissions": [ "Storage Blob Data Contributor" ]
+        },
+        {
+            "identity": "SP-OmniDataBridge-D",
+            "permissions": [ "Storage Blob Data Contributor" ]
+        },
+        {
+            "identity": "R-DAIT-AzureDevelopmentAccess-LSA",
+            "permissions": [ "Storage Blob Data Contributor" ]
+        }
+    ]
+]

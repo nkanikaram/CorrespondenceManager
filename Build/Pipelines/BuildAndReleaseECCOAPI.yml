@@ -1,0 +1,361 @@
+trigger: none
+  # branches:
+  #   include:
+  #   - refs/heads/main
+
+resources:
+  repositories:
+  - repository: templates
+    type: git
+    name: Internal Open Source/AzDOYAMLTemplates
+    ref: main
+ 
+variables:
+  - group: Veracode_FlawImporter    
+  - name: Veracode_Scan_Path
+    value: '$(Build_Project_Path)/'
+  - name: Build_Project_Path
+    value: '**/*.sln'
+  - name: DomainProject
+    value: '**/CustomerCorrespondence.Domain.csproj'
+  - name: ApplicationProject
+    value: '**/CustomerCorrespondence.Application.csproj'
+  - name: InfrastructureProject
+    value: '**/CustomerCorrespondence.Infrastructure.csproj'
+  - name: CoreProject
+    value: '**/CustomerCorrespondence.Core.csproj'
+  - name: ExceptionsProject
+    value: '**/CustomerCorrespondence.Exceptions.csproj'
+  - name: ResilienceProject
+    value: '**/CustomerCorrespondence.Resilience.csproj'
+  - name: MainWebApp
+    value: '**/ProcessRequestEndPoint.csproj'
+  - name: TestProject
+    value: '**/CustomerCorrespondenceTests.csproj'
+  - name: BuildPlatform
+    value: 'Any CPU'
+
+stages:
+- stage: Build
+  displayName: 'Build CommManager'
+  jobs:
+  - job: 'Build'
+    displayName: 'Build Comm Manager with Veracode'
+    cancelTimeoutInMinutes: 1
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
+    workspace:
+      clean: all
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    
+    # Authenticate FIRST before any restore
+    - task: NuGetAuthenticate@1
+      displayName: 'Authenticate to Azure Artifacts'
+    
+    # Use DotNetCoreCLI restore with CORRECT feed ID
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet Packages'
+      inputs:
+        command: 'restore'
+        projects: |
+          $(DomainProject)
+          $(ApplicationProject)
+          $(InfrastructureProject)
+          $(CoreProject)
+          $(ExceptionsProject)  
+          $(ResilienceProject)
+          $(MainWebApp)
+          $(TestProject)
+        feedsToUse: 'select'
+        vstsFeed: 'ECCO'  # CHANGED: Use organization-scoped feed name
+        includeNuGetOrg: true
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: 'build'
+        projects: |
+          $(TestProject)
+          $(DomainProject)
+          $(ApplicationProject)
+          $(InfrastructureProject)
+          $(CoreProject)
+          $(ExceptionsProject)
+          $(ResilienceProject)
+          $(MainWebApp)
+        arguments: --configuration Release --no-restore
+    - task: VSTest@3
+      displayName: Run Unit Tests
+      inputs:
+        testSelector: 'testAssemblies'
+        codeCoverageEnabled: true
+        runSettingsFile: 'CustomerCorrespondence.TestProjects/DomainTests/.runsettings'
+        searchFolder: '$(System.DefaultWorkingDirectory)'
+    - task: DotNetCoreCLI@2
+      displayName: Publish
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: '$(MainWebApp)'
+        arguments: --configuration Release --output $(build.artifactstagingdirectory) --no-restore
+    - task: ArchiveFiles@2
+      displayName: 'Archive published files'
+      inputs:
+        rootFolderOrFile: '$(build.artifactstagingdirectory)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(build.artifactstagingdirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+    - task: Veracode@3
+      inputs:
+        ConnectionDetailsSelection: 'Service Connection'
+        AnalysisService: 'Veracode-AllTeams-CorporateServices'
+        veracodeAppProfile: 'CommManager'
+        version: '$(build.buildNumber)'
+        filepath: '$(build.artifactstagingdirectory)'
+        failBuildIfUploadAndScanBuildStepFails: true
+        failBuildOnPolicyFail: true
+        maximumWaitTime: '360'
+    - task: Veracode Flaw Importer@3
+      inputs:
+        ConnectionDetailsSelection: 'Service Connection'
+        AnalysisService: 'Veracode-AllTeams-CorporateServices'
+        veracodeAppProfile: 'CommManager'
+        sandboxName: ''
+        scanType: 'Dynamic, Static, SCA'
+        importType: 'All Unmitigated Flaws Violating Policy'
+        workItemType: 'Bug'
+        area: '$(system.teamProject)\ECCO'
+        overwriteAreaPathInWorkItemsOnImport: true
+        iterationPath: '$(system.teamProject)\ECCO'
+        overwriteIterationPath: true
+        flawImportLimit: '1000'
+    - task: PublishPipelineArtifact@1
+      displayName: Publish artifacts
+      inputs:
+        targetPath: '$(build.artifactstagingdirectory)'
+        artifact: 'drop'
+        publishLocation: 'pipeline'
+- stage: DVLP
+  dependsOn: Build
+  variables:
+    - template: Variables/AzureDeployDVLP.yml
+  jobs:
+  - deployment: DeployDVLPWebApp
+    displayName: 'Deploy to DVLP'
+    environment: 'ECCO-Dvlp'
+    pool:
+      name: Azure Pipelines    
+      vmImage: 'windows-latest'
+    strategy:
+      runOnce:
+        deploy:
+         steps:
+         - task: 30f35852-3f7e-4c0c-9a88-e127b4f97211@1
+           inputs:
+             alias: current
+             artifact: drop
+         - task: AzureRmWebAppDeployment@5
+           displayName: 'Azure App Service Deploy: $(AppName)'
+           inputs:
+             ConnectionType: 'AzureRM'
+             azureSubscription: 'Corporate NonProd Corporate'
+             appType: 'webApp'
+             WebAppName: '$(AppName)'
+             packageForLinux: '$(Pipeline.Workspace)/drop/ProcessRequestEndPoint.zip'
+             enableCustomDeployment: true
+             DeploymentType: 'webDeploy'
+             TakeAppOfflineFlag: true
+             RemoveAdditionalFilesFlag: true
+         - task: AzureCLI@2
+           displayName: 'Restart Azure App Service'
+           inputs:
+             azureSubscription: 'Corporate NonProd Corporate'
+             scriptType: 'ps'
+             scriptLocation: 'inlineScript'
+             inlineScript: |
+                $resourceGroup = "$(RGName)"
+                $appName = "$(AppName)"
+                az webapp restart --resource-group $resourceGroup --name $appName
+  - job: DeployDVLPDynatraceReleaseEvent
+    displayName: 'Deploy Dynatrace Release Event for DVLP'
+    dependsOn: DeployDVLPWebApp
+  - template: Utility/Dynatrace/DynatraceReleaseEvents.yml@templates
+    parameters:
+      VariableGroupName: 'Dynatrace API'
+      AzureSubscription: 'Corporate NonProd Corporate'
+      DynatraceReleaseTag: 'Service:$(AppName)'
+      DynaEnvironment: '$(DYNATRACE_ENV)'
+
+- stage: DEMO
+  dependsOn: DVLP
+  variables:
+    - template: Variables/AzureDeployDEMO.yml
+  jobs:
+  - deployment: DeployDEMOWebApp
+    displayName: 'Deploy to DEMO'
+    environment: 'ECCO-Demo'
+    pool:
+      name: Azure Pipelines    
+      vmImage: 'windows-latest'
+    strategy:
+      runOnce:
+        deploy:
+         steps:
+         - task: 30f35852-3f7e-4c0c-9a88-e127b4f97211@1
+           inputs:
+             alias: current
+             artifact: drop
+         - task: AzureRmWebAppDeployment@5
+           displayName: 'Azure App Service Deploy: $(AppName)'
+           inputs:
+             ConnectionType: 'AzureRM'
+             azureSubscription: 'Corporate NonProd Corporate'
+             appType: 'webApp'
+             WebAppName: '$(AppName)'
+             packageForLinux: '$(Pipeline.Workspace)/drop/ProcessRequestEndPoint.zip'
+             enableCustomDeployment: true
+             DeploymentType: 'webDeploy'
+             TakeAppOfflineFlag: true
+             RemoveAdditionalFilesFlag: true
+         - task: AzureCLI@2
+           displayName: 'Restart Azure App Service'
+           inputs:
+             azureSubscription: 'Corporate NonProd Corporate'
+             scriptType: 'ps'
+             scriptLocation: 'inlineScript'
+             inlineScript: |
+                $resourceGroup = "$(RGName)"
+                $appName = "$(AppName)"
+                az webapp restart --resource-group $resourceGroup --name $appName
+  - job: DeployDEMODynatraceReleaseEvent
+    displayName: 'Deploy Dynatrace Release Event for DEMO'
+    dependsOn: DeployDEMOWebApp
+  - template: Utility/Dynatrace/DynatraceReleaseEvents.yml@templates
+    parameters:
+      VariableGroupName: 'Dynatrace API'
+      AzureSubscription: 'Corporate NonProd Corporate'
+      DynatraceReleaseTag: 'Service:$(AppName)'
+      DynaEnvironment: '$(DYNATRACE_ENV)'
+
+- stage: PROD
+  displayName: 'Deploy App to PROD Staging Slot'
+  dependsOn: DEMO
+  variables:
+    - template: Variables/AzureDeployPROD.yml
+  jobs:
+  - deployment: DeployPRODWebApp
+    displayName: 'Deploy to staging PROD slot'
+    environment: 'ECCO-Prod'
+    pool:
+      name: Azure Pipelines    
+      vmImage: 'windows-latest'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: 30f35852-3f7e-4c0c-9a88-e127b4f97211@1
+            inputs:
+              alias: current
+              artifact: drop
+          - task: AzureRmWebAppDeployment@5
+            displayName: 'Azure App Service Deploy: $(AppName)'
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: 'Corporate Prod Corporate'
+              appType: 'webApp'
+              WebAppName: '$(AppName)'
+              ResourceGroupName: '$(RGName)'
+              packageForLinux: '$(Pipeline.Workspace)/drop/ProcessRequestEndPoint.zip'
+              enableCustomDeployment: true
+              DeploymentType: 'webDeploy'
+              TakeAppOfflineFlag: true
+              RemoveAdditionalFilesFlag: true
+              deployToSlotOrASE: true
+              SlotName: 'staging'
+          - task: AzureCLI@2
+            displayName: 'Restart Azure App Service'
+            inputs:
+              azureSubscription: 'Corporate Prod Corporate'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                $resourceGroup = "$(RGName)"
+                $appName = "$(AppName)"
+                az webapp restart --resource-group $resourceGroup --name $appName --slot staging
+          - task: AzureAppServiceManage@0
+            displayName: 'Swap PROD Staging and Production Slots'
+            inputs:
+              azureSubscription: 'Corporate Prod Corporate'
+              Action: 'Swap Slots'
+              WebAppName: '$(AppName)'
+              ResourceGroupName: '$(RGName)'
+              SourceSlot: 'staging'
+              TargetSlot: 'production'
+          - task: AzureCLI@2
+            displayName: 'Restart Azure App Service'
+            inputs:
+              azureSubscription: 'Corporate Prod Corporate'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                $resourceGroup = "$(RGName)"
+                $appName = "$(AppName)"
+                az webapp restart --resource-group $resourceGroup --name $appName
+  - job: DeployPRODDynatraceReleaseEvent
+  - template: Utility/Dynatrace/DynatraceReleaseEvents.yml@templates
+    parameters:
+      VariableGroupName: 'Dynatrace API'
+      AzureSubscription: 'Corporate Prod Corporate'
+      DynatraceReleaseTag: 'Service:$(AppName)'
+      DynaEnvironment: '$(DYNATRACE_ENV)'
+
+- stage: SwapSlots_PROD
+  displayName: 'Swap PROD Staging to Production'
+  #dependsOn: PROD
+  variables:
+    - template: Variables/AzureDeployPROD.yml
+  jobs:
+  - deployment: DeployPRODWebApp
+    displayName: 'Deploy to PROD'
+    environment: 'ECCO-Prod'
+    pool:
+      name: Azure Pipelines    
+      vmImage: 'windows-latest'
+      strategy:
+      runOnce:
+        deploy:
+         steps:
+          - task: AzureAppServiceManage@0
+            displayName: 'Swap PROD Staging and Production Slots'
+            inputs:
+              azureSubscription: 'Corporate Prod Corporate'
+              Action: 'Swap Slots'
+              WebAppName: '$(AppName)'
+              ResourceGroupName: '$(RGName)'
+              SourceSlot: 'staging'
+              TargetSlot: 'production'
+          - task: AzureCLI@2
+            displayName: 'Restart Azure App Service'
+            inputs:
+              azureSubscription: 'Corporate Prod Corporate'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                $resourceGroup = "$(RGName)"
+                $appName = "$(AppName)"
+                az webapp restart --resource-group $resourceGroup --name $appName
+
+  - job: DeployPRODDynatraceReleaseEvent
+  - template: Utility/Dynatrace/DynatraceReleaseEvents.yml@templates
+    parameters:
+      VariableGroupName: 'Dynatrace API'
+      AzureSubscription: 'Corporate Prod Corporate'
+      DynatraceReleaseTag: 'Service:$(AppName)'
+      DynaEnvironment: '$(DYNATRACE_ENV)'

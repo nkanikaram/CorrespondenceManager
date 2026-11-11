@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en" ng-app="adminPortal" ng-strict-di data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ECCO Correspondence Manager</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐬</text></svg>">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body ng-cloak>
+  <app-shell></app-shell>
+
+  <script src="node_modules/angular/angular.min.js"></script>
+  <script src="node_modules/@azure/msal-browser/lib/msal-browser.min.js"></script>
+  <script src="node_modules/@microsoft/signalr/dist/browser/signalr.min.js"></script>
+
+  <script src="app/app.module.js"></script>
+  <script src="app/config.js"></script>
+
+  <script src="app/services/storage.service.js"></script>
+  <script src="app/services/error-recovery.service.js"></script>
+  <script src="app/services/grid.service.js"></script>
+  <script src="app/services/grid-filter.service.js"></script>
+  <script src="app/services/payload-validation.service.js"></script>
+  <script src="app/services/search-refinement.service.js"></script>
+  <script src="app/services/search-query.service.js"></script>
+  <script src="app/services/correspondence-analytics.service.js"></script>
+  <script src="app/services/markdown.service.js"></script>
+  <script src="app/services/ai-prompt.service.js"></script>
+  <script src="app/services/api.service.js"></script>
+  <script src="app/services/auth.service.js"></script>
+  <script src="app/services/sso.service.js"></script>
+  <script src="app/services/realtime.service.js"></script>
+  <script src="app/services/excel-export.service.js"></script>
+  <script src="app/services/theme.service.js"></script>
+  <script src="app/services/account.service.js"></script>
+  <script src="app/services/speech.service.js"></script>
+  <script src="app/services/assistant-bridge.service.js"></script>
+  <script src="app/services/appearance.service.js"></script>
+
+  <script src="app/components/shared/shared.js"></script>
+  <script src="app/components/charts/charts.js"></script>
+  <script src="app/components/pagination/pagination.component.js"></script>
+  <script src="app/components/correspondence-grid/correspondence-grid.component.js"></script>
+  <script src="app/components/analytics-panel/analytics-panel.component.js"></script>
+  <script src="app/components/payload/payload.js"></script>
+  <script src="app/components/pdf/pdf-viewer-modal.component.js"></script>
+  <script src="app/components/record/record-detail-panel.component.js"></script>
+  <script src="app/components/assistant/assistant-panel.component.js"></script>
+  <script src="app/components/assistant/assistant-popup.component.js"></script>
+  <script src="app/pages/search/search-page.component.js"></script>
+  <script src="app/components/auth/auth.components.js"></script>
+  <script src="app/pages/admin/admin-page.component.js"></script>
+  <script src="app/shell/app-shell.component.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+trigger: none
+
+schedules:
+- cron: "0 18 * * 6"
+  displayName: Weekly Veracode Build
+  branches:
+    include:
+    - main
+  always: true
+
+resources:
+  repositories:
+  - repository: ECCO-CommunicationManager
+    type: git
+    name: CorporateServices/ECCO-CommunicationManager
+ 
+variables:
+  - group: Veracode_FlawImporter    
+  - name: Veracode_Scan_Path
+    value: '$(Build_Project_Path)/'
+  - name: Build_Project_Path
+    value: '**/*.sln'
+  - name: DomainProject
+    value: '**/CustomerCorrespondence.Domain.csproj'
+  - name: ApplicationProject
+    value: '**/CustomerCorrespondence.Application.csproj'
+  - name: InfrastructureProject
+    value: '**/CustomerCorrespondence.Infrastructure.csproj'
+  - name: MainWebApp
+    value: '**/ProcessRequestEndPoint.csproj'
+  - name: TestProject
+    value: '**/CustomerCorrespondenceTests.csproj'
+  - name: BuildPlatform
+    value: 'Any CPU'
+
+stages:
+- stage: Build
+  displayName: 'Build CommManager'
+  jobs:
+  - job: 'Build'
+    displayName: 'Build Comm Manager with weekly Veracode Scan'
+    cancelTimeoutInMinutes: 1
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
+    workspace:
+      clean: all
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+    - task: NuGetCommand@2
+      displayName: 'Restore Nuget packages'
+      inputs:
+        command: 'restore'
+        projects: |
+          $(DomainProject)
+          $(ApplicationProject)
+          $(InfrastructureProject)
+          $(MainWebApp)
+          $(TestProject)
+        feedsToUse: config
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: 'build'
+        projects: |
+          $(TestProject)
+          $(DomainProject)
+          $(ApplicationProject)
+          $(InfrastructureProject)
+          $(MainWebApp)
+        arguments: --configuration Release --no-restore
+    - task: VSTest@3
+      displayName: Run Unit Tests
+      inputs:
+        testSelector: 'testAssemblies'
+        codeCoverageEnabled: true
+        runSettingsFile: 'CustomerCorrespondence.TestProjects/DomainTests/.runsettings'
+        searchFolder: '$(System.DefaultWorkingDirectory)'
+    - task: DotNetCoreCLI@2
+      displayName: Publish
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: '$(MainWebApp)'
+        arguments: --configuration Release --output $(build.artifactstagingdirectory) --no-restore
+    - task: ArchiveFiles@2
+      displayName: 'Archive published files'
+      inputs:
+        rootFolderOrFile: '$(build.artifactstagingdirectory)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(build.artifactstagingdirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+    - task: Veracode@3
+      inputs:
+        ConnectionDetailsSelection: 'Service Connection'
+        AnalysisService: 'Veracode-AllTeams-CorporateServices'
+        veracodeAppProfile: 'CommManager'
+        version: '$(build.buildNumber)'
+        filepath: '$(build.artifactstagingdirectory)'
+        failBuildIfUploadAndScanBuildStepFails: true
+        failBuildOnPolicyFail: true
+        maximumWaitTime: '360'
+    - task: Veracode Flaw Importer@3
+      inputs:
+        ConnectionDetailsSelection: 'Service Connection'
+        AnalysisService: 'Veracode-AllTeams-CorporateServices'
+        veracodeAppProfile: 'CommManager'
+        sandboxName: ''
+        scanType: 'Dynamic, Static, SCA'
+        importType: 'All Unmitigated Flaws Violating Policy'
+        workItemType: 'Bug'
+        area: '$(system.teamProject)\ECCO'
+        overwriteAreaPathInWorkItemsOnImport: true
+        iterationPath: '$(system.teamProject)\ECCO'
+        overwriteIterationPath: true
+        flawImportLimit: '1000'
+    - task: PublishPipelineArtifact@1
+      displayName: Publish artifacts
+      inputs:
+        targetPath: '$(build.artifactstagingdirectory)'
+        artifact: 'drop'
+        publishLocation: 'pipeline'

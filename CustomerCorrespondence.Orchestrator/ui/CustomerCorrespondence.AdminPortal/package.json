@@ -1,0 +1,22 @@
+{
+  "name": "admin-portal",
+  "version": "1.0.0",
+  "description": "ECCO Correspondence Manager — AngularJS port of the CustomerCorrespondence.UI React app",
+  "private": true,
+  "scripts": {
+    "start": "node tools/mock-api.js --port 8080 --open",
+    "start:api": "node tools/dev-server.js --port 8080 --api https://localhost:7228 --open",
+    "start:mock": "node tools/mock-api.js",
+    "test": "node tests/run.js",
+    "start:static": "http-server . -p 8080 -c-1 -o -P https://localhost:7228 --proxy-options.secure false --proxy-options.changeOrigin true"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "5.25.1",
+    "@microsoft/signalr": "8.0.17",
+    "angular": "1.8.3"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "http-proxy": "^1.18.1"
+  }
+}

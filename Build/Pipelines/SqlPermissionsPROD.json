@@ -1,0 +1,10 @@
+[
+  {
+    "userid": "MI-P01-ECCO",
+    "permissions": ["select", "insert", "update", "delete", "execute"]
+  },
+  {
+    "userid": "SP-P01-P",
+    "permissions": [ "select", "insert", "update", "delete", "execute" ]
+  }
+]

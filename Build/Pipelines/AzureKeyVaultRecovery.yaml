@@ -1,0 +1,63 @@
+trigger: none
+
+pool: Atlashostedagents
+
+parameters:
+  - name: Environment
+    displayName: "Environment to recover Key Vault"
+    type: string
+    default: DVLP
+    values:
+      - DVLP
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscription to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - name: RG_ENVCODE
+      value: D01
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: RG_ENVCODE
+      value: M01
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: RG_ENVCODE
+      value: P01
+  - name: KV_NAME
+    value: 'kv-$(RG_ENVCODE)-ECCO'
+  - name: LOCATION
+    value: 'East US 2'
+  - name: RG_APP_NAME
+    value: 'RG-CMFG-$(RG_ENVCODE)-ECCO'
+
+stages:
+  - stage: RecoverKeyVault
+    displayName: 'Recover Deleted Key Vault'
+    jobs:
+      - job: RecoverKeyVaultJob
+        displayName: 'Recover Key Vault if soft-deleted'
+        steps:
+          - task: AzurePowerShell@5
+            displayName: 'Recover Deleted Key Vault $(KV_NAME)'
+            inputs:
+              azureSubscription: '${{ parameters.Subscription }}'
+              ScriptType: 'InlineScript'
+              Inline: |
+                $kvName = "$(KV_NAME)"
+                $location = "$(LOCATION)"
+                $resourceGroupName = "$(RG_APP_NAME)"
+                Write-Host "Checking for deleted Key Vault: $kvName in $location"
+                $deletedKv = Get-AzKeyVault -VaultName $kvName -InRemovedState -Location $location
+                if ($deletedKv) {
+                  Write-Host "Recovering deleted Key Vault: $kvName in $resourceGroupName"
+                  Undo-AzKeyVaultRemoval -VaultName $kvName -ResourceGroupName $resourceGroupName -Location $location
+                } else {
+                  Write-Host "No deleted Key Vault named $kvName found in $location."
+                }
+              azurePowerShellVersion: LatestVersion

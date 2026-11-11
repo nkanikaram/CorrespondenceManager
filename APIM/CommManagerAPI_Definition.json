@@ -1,0 +1,20 @@
+{
+    "apis": [
+      {
+        "name": "ECCO",
+        "definitionfile": "CommManagerAPINew.json",
+        "backend_uri": "__BackendURI__",
+        "protocol": "https",
+        "schemaFileFormat": "OpenApi",
+        "api_path": "/ECCO",
+        "ApiVersion": "v1",
+        "Description": "ECCO API for correspondence orchestration. Owned by DS-ECCO@trustage.com",
+        "policies": [
+          {
+            "name": "JWT_Policy",
+            "path": "JWT_Policy.xml"
+          }
+        ]
+      }
+    ]
+}

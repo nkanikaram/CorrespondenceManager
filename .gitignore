@@ -1,0 +1,22 @@
+﻿# build outputs
+bin/
+obj/
+
+# VS
+.vs/
+*.user
+*.suo
+
+# NuGet
+*.nupkg
+packages/
+
+# Node
+node_modules/
+
+
+# Local-only files
+.claude/settings.local.json
+
+CustomerCorrespondence.Orchestrator/ProcessRequestEndPoint/appsettings.Development.json
+

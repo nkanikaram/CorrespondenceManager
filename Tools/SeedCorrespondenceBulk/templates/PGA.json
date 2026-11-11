@@ -1,0 +1,72 @@
+{
+"Process": {
+"DocId": "",
+"RequestingSystemName": "Payment Guard Advantage",
+"ECCOTrackingClaimNumber": "1234567890",
+"ECCOTrackingCustomerId": "",
+"ECCOTrackingPolicyNumber": "PGA123456789",
+"DeliveryMethod": "Mail",
+"DocumentDescription": "PGA Welcome Kit",
+"MailDeliveryInfo": {
+"RecipientFullName": "Test Record",
+"RecipientFirstName": "John",
+"RecipientLastName": "Doe",
+"RecipientAddress": {
+"RecipientAddressLine1": "123 Main St",
+"RecipientAddressLine2": null,
+"RecipientAddressLine3": null,
+"RecipientAddressCity": "Springfield",
+"RecipientAddressST": "IL",
+"RecipientAddressZIP": "62704",
+"RecipientCountry": "US"
+},
+"NonUSAddressFlag": false,
+"BadAddressFlag": false
+},
+"CompositionInfo": {
+"VersionCode": "PGA",
+"CompositionSchemaId": "",
+"SolutionsId": "c097d4ac-9fdc-4456-aa76-5d6c7b4b6521"
+},
+"AdditionalData": {
+"CurrentDate": "YYYYMMDD",
+"LineofBusiness": null,
+"CompanyCode": null,
+"PolicyNumber": "0123456789",
+"JobLossPlanCode": "9045",
+"DisabilityPlanCode": "9044",
+"EffectiveDate": "YYYYMMDD",
+"PolicyTerm": "string",
+"IssueState": "ST",
+"InsuredFullName": "First Last",
+"InsuredDateofBirth": "YYYYMMDD",
+"InsuredOccupation": null,
+"DisabilityBenefitAmount": "1,000.00",
+"JobLossBenefitAmount": "1,000.00",
+"LumpSumBenefitAmount": "1,000.00",
+"TotalAnnualPremium": "1,000.00",
+"EligibilityJobStatusResponse": null,
+"EligibilityUnionResponse": null,
+"EligibilityEmploymentTypeResponse": null,
+"DisabilityBenefitWaitingPeriod": 30,
+"JobLossBenefitWaitingPeriod": 30,
+"MaximumBenefitAmount": "1,000.00",
+"DueDate": "YYYYMMDD",
+"BillingMode": "MONTHLY",
+"ModePremium": "1,000.00",
+"QuarterlyPremium": null,
+"AnnualPremium": "1,000.00",
+"SocialSecurityNumber": "XXX-XXX-1234",
+"ApplicationSignatureDate": "YYYYMMDD",
+"ApplicationSignaturePrintedName": null,
+"ApplicationElectronicSignature": null,
+"AgentID": null,
+"AgentSignedDate": null,
+"AgentElectronicSignature": null,
+"AgentFullName": null,
+"RecipientPhoneNumber": null,
+"RecipientEmailAddress": null,
+"ContractNumber": null
+}
+}
+}

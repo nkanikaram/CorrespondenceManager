@@ -1,0 +1,274 @@
+<div class="grid" ng-class="'grid--' + $ctrl.density">
+  <div class="grid__viewbar">
+    <button type="button" class="quick-filter quick-filter--danger" ng-class="{ 'is-active': $ctrl.breachedOnly() }"
+            aria-pressed="{{ $ctrl.breachedOnly() }}" aria-label="Breached only" ng-click="$ctrl.toggleBreachedOnly()"
+            title="{{ $ctrl.breachedOnly() ? 'Show every request again' : 'Show only open requests that are past their SLA' }}">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg>
+      <span>Breached only</span>
+    </button>
+    <button type="button" class="grid__fit-note" ng-if="$ctrl.autoHiddenColumns.length" ng-click="$ctrl.showHiddenColumns()"
+            title="Hidden to fit the window: {{ $ctrl.hiddenNames() }}. They're still in each record's details, or switch them back on under Columns.">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4M17 12h4M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>
+      <span class="grid__fit-note-long">{{ $ctrl.autoHiddenColumns.length }} {{ $ctrl.autoHiddenColumns.length === 1 ? 'column' : 'columns' }} hidden to fit</span>
+      <span class="grid__fit-note-short">{{ $ctrl.autoHiddenColumns.length }} hidden</span>
+    </button>
+    <div class="dropdown" cc-click-outside="$ctrl.columnsOpen = false">
+      <button type="button" class="btn btn--sm btn--ghost" ng-click="$ctrl.columnsOpen = !$ctrl.columnsOpen"
+              aria-haspopup="true" aria-expanded="{{ !!$ctrl.columnsOpen }}">
+        Columns <span class="grid__viewbar-count" ng-if="$ctrl.visibleColumns.length < $ctrl.columns.length">{{ $ctrl.visibleColumns.length }}/{{ $ctrl.columns.length }}</span>
+        <span class="caret" aria-hidden="true"></span>
+      </button>
+      <div class="dropdown__menu dropdown__menu--end column-chooser" ng-if="$ctrl.columnsOpen" role="menu">
+        <label class="column-chooser__item" ng-repeat="col in $ctrl.columns track by col.key">
+          <input type="checkbox" ng-checked="$ctrl.isVisible(col)" ng-disabled="$ctrl.isOnlyVisible(col)" ng-click="$ctrl.toggleColumn(col)">
+          <span class="column-chooser__label">{{ col.label }}</span>
+          <span class="column-chooser__tag" ng-if="$ctrl.autoHidden[col.key] && !$ctrl.hidden[col.key]">Hidden to fit</span>
+          <span class="column-chooser__tag column-chooser__tag--pin" ng-if="$ctrl.pinned[col.key]" title="Pinned: always shown, even when it doesn't fit" aria-label="Pinned">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" style="vertical-align: -2px;"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>
+          </span>
+        </label>
+        <div class="column-chooser__hint" ng-if="$ctrl.autoHiddenColumns.length">Columns that don't fit are hidden, least important first. Tick one to show it anyway.</div>
+        <button type="button" class="link-btn column-chooser__reset" ng-click="$ctrl.resetColumns()">Reset to default</button>
+      </div>
+    </div>
+    <div class="segmented" role="group" aria-label="Row density">
+      <button type="button" ng-class="{ 'is-active': $ctrl.density === 'comfortable' }" aria-pressed="{{ $ctrl.density === 'comfortable' }}"
+              ng-click="$ctrl.setDensity('comfortable')">Comfortable</button>
+      <button type="button" ng-class="{ 'is-active': $ctrl.density === 'compact' }" aria-pressed="{{ $ctrl.density === 'compact' }}"
+              ng-click="$ctrl.setDensity('compact')">Compact</button>
+    </div>
+  </div>
+  <div class="grid__scroll">
+    <table class="grid__table">
+      <thead>
+        <tr>
+          <th class="grid__select" scope="col" data-col="_select">
+            <input type="checkbox" title="Select all items on this page" aria-label="Select all items on this page"
+                   ng-checked="$ctrl.allSelected()" ng-click="$ctrl.toggleAll()">
+          </th>
+          <th ng-repeat="col in $ctrl.visibleColumns track by col.key" scope="col" data-col="{{ col.key }}" aria-sort="{{ $ctrl.ariaSort(col) }}"
+              ng-class="{ 'is-sorted': $ctrl.sortDir(col) }">
+            <div class="grid__head" cc-click-outside="$ctrl.closeColumnMenu(col)">
+              <button type="button" class="grid__sort" ng-if="col.sortable !== false" ng-click="$ctrl.toggleSort(col)">
+                {{ col.label }}
+                <span class="sort-icon" ng-class="'sort-icon--' + ($ctrl.sortDir(col) || 'none')" aria-hidden="true"></span>
+              </button>
+              <span class="grid__sort grid__sort--static" ng-if="col.sortable === false">{{ col.label }}</span>
+              <button type="button" class="col-menu__btn" ng-if="col.filterable !== false" ng-class="{ 'is-active': $ctrl.cellActive(col), 'is-open': $ctrl.colMenu.key === col.key }"
+                      title="{{ col.label }} column menu" aria-label="{{ col.label }} column menu" aria-haspopup="dialog"
+                      aria-expanded="{{ $ctrl.colMenu.key === col.key }}" ng-click="$ctrl.toggleColumnMenu(col)">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.4"></circle><circle cx="8" cy="8" r="1.4"></circle><circle cx="8" cy="13" r="1.4"></circle></svg>
+              </button>
+
+              <div class="col-menu" ng-if="$ctrl.colMenu.key === col.key" ng-class="{ 'col-menu--end': col.menuAlignEnd }"
+                   role="dialog" aria-label="{{ col.label }} column menu" ng-keydown="$event.key === 'Escape' && $ctrl.closeColumnMenu(col)">
+                <div class="col-menu__section">
+                  <button type="button" class="col-menu__item" ng-class="{ 'is-active': $ctrl.sortDir(col) === 'asc' }" ng-click="$ctrl.menuSort(col, 'asc')">
+                    <span class="sort-icon sort-icon--asc" aria-hidden="true"></span> Sort Ascending
+                  </button>
+                  <button type="button" class="col-menu__item" ng-class="{ 'is-active': $ctrl.sortDir(col) === 'desc' }" ng-click="$ctrl.menuSort(col, 'desc')">
+                    <span class="sort-icon sort-icon--desc" aria-hidden="true"></span> Sort Descending
+                  </button>
+                </div>
+
+                <form class="col-menu__section" ng-submit="$ctrl.applyColumnMenu(col)" novalidate>
+                  <div class="col-menu__title">
+                    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M1 2h14l-5.5 6.5V14l-3-1.5V8.5z" fill="currentColor"></path></svg>
+                    Filter
+                  </div>
+
+                  <!-- Two conditions joined by And / Or (GridColumnMenuFilter) -->
+                  <div ng-if="col.menu === 'conditions'" class="col-menu__conditions">
+                    <div class="col-menu__hint">Show items with value that:</div>
+                    <div class="col-menu__condition" ng-repeat="cond in [$ctrl.colMenu.first, $ctrl.colMenu.second] track by $index">
+                      <select class="input input--filter" aria-label="{{ $first ? 'First' : 'Second' }} condition operator"
+                              ng-model="cond.operator" ng-options="o.operator as o.text for o in col.operators"></select>
+                      <input ng-if="col.filterType === 'date' && $ctrl.conditionNeedsValue(cond)" type="date" class="input input--filter"
+                             aria-label="{{ $first ? 'First' : 'Second' }} condition value" ng-model="cond.value" cc-focus-when="$first">
+                      <input ng-if="col.filterType !== 'date' && $ctrl.conditionNeedsValue(cond)" type="text" class="input input--filter"
+                             aria-label="{{ $first ? 'First' : 'Second' }} condition value" ng-model="cond.value" cc-focus-when="$first">
+                      <select ng-if="$first" class="input input--filter col-menu__logic" aria-label="Combine conditions with"
+                              ng-model="$ctrl.colMenu.logic" ng-options="l.value as l.text for l in $ctrl.logicOptions"></select>
+                    </div>
+                  </div>
+
+                  <!-- Pick values (GridColumnMenuCheckboxFilter) -->
+                  <div ng-if="col.menu === 'checkbox'" class="col-menu__checks">
+                    <input type="search" class="input input--filter" placeholder="Search" aria-label="Search {{ col.label }} values"
+                           ng-model="$ctrl.colMenu.search" cc-focus-when="true">
+                    <label class="col-menu__check col-menu__check--all">
+                      <input type="checkbox" ng-checked="$ctrl.allVisibleChecked()" ng-prop-indeterminate="$ctrl.someVisibleChecked()"
+                             ng-click="$ctrl.toggleAllValues()"> Select All
+                    </label>
+                    <div class="col-menu__list">
+                      <label class="col-menu__check" ng-repeat="v in $ctrl.visibleValues() track by v.value">
+                        <input type="checkbox" ng-model="v.checked"> <span class="col-menu__value">{{ v.value }}</span>
+                        <span class="col-menu__count" ng-if="v.count">{{ v.count }}</span>
+                      </label>
+                      <div class="col-menu__hint" ng-if="!$ctrl.visibleValues().length">No matching values.</div>
+                    </div>
+                    <div class="col-menu__hint">{{ $ctrl.checkedCount() }} selected {{ $ctrl.checkedCount() === 1 ? 'item' : 'items' }}</div>
+                    <div class="col-menu__hint col-menu__hint--warn" ng-if="$ctrl.colMenu.otherFilter">Filter replaces the current {{ col.label }} filter.</div>
+                  </div>
+
+                  <div class="col-menu__actions">
+                    <button type="button" class="btn btn--sm" ng-click="$ctrl.clearColumnMenu(col)">Clear</button>
+                    <button type="submit" class="btn btn--sm btn--primary">Filter</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </th>
+          <th scope="col" class="grid__payload-col" data-col="_actions" ng-if="$ctrl.hasActions()" ng-class="{ 'grid__payload-col--compact': $ctrl.compactActions }">Actions</th>
+        </tr>
+        <tr class="grid__filters">
+          <th></th>
+          <th ng-repeat="col in $ctrl.visibleColumns track by col.key">
+            <div class="filter-cell" ng-if="col.filterable !== false" ng-class="{ 'is-active': $ctrl.cellActive(col) }">
+              <!-- Set from outside as a group (e.g. the AI's multi-status search): summary + clear only -->
+              <span ng-if="$ctrl.cells[col.key].group" class="grid__multi-filter" title="{{ $ctrl.groupTitle(col) }}">{{ $ctrl.groupLabel(col) }}</span>
+
+              <div class="filter-cell__editor" ng-if="!$ctrl.cells[col.key].group">
+                <input ng-if="col.filterType === 'text' && $ctrl.needsValue(col)" type="text" class="input input--filter"
+                       aria-label="Filter {{ col.label }}: {{ $ctrl.operatorLabel(col) }}"
+                       ng-model="$ctrl.cells[col.key].value" ng-model-options="{ debounce: 250 }" ng-change="$ctrl.valueChanged(col)">
+                <input ng-if="col.filterType === 'date' && $ctrl.needsValue(col)" type="date" class="input input--filter"
+                       aria-label="Filter {{ col.label }}: {{ $ctrl.operatorLabel(col) }}"
+                       ng-model="$ctrl.cells[col.key].value" ng-change="$ctrl.valueChanged(col)">
+                <select ng-if="col.filterType === 'select' && $ctrl.needsValue(col)" class="input input--filter"
+                        aria-label="Filter {{ col.label }}: {{ $ctrl.operatorLabel(col) }}"
+                        ng-model="$ctrl.cells[col.key].value" ng-change="$ctrl.valueChanged(col)"
+                        ng-options="s for s in (col.options || $ctrl.statusOptions)">
+                  <option value="">(All)</option>
+                </select>
+                <span ng-if="!$ctrl.needsValue(col)" class="filter-cell__op-text">{{ $ctrl.operatorLabel(col) }}</span>
+              </div>
+
+              <div class="dropdown" ng-if="!$ctrl.cells[col.key].group" cc-click-outside="$ctrl.closeMenu(col)">
+                <button type="button" class="filter-cell__btn" ng-class="{ 'is-active': $ctrl.cellActive(col) }"
+                        title="{{ $ctrl.operatorLabel(col) }}" aria-label="Filter operator for {{ col.label }}: {{ $ctrl.operatorLabel(col) }}"
+                        aria-haspopup="listbox" aria-expanded="{{ $ctrl.openMenu === col.key }}"
+                        ng-click="$ctrl.toggleMenu(col)">
+                  <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M1 2h14l-5.5 6.5V14l-3-1.5V8.5z" fill="currentColor"></path></svg>
+                </button>
+                <ul class="dropdown__menu filter-cell__menu" role="listbox" ng-if="$ctrl.openMenu === col.key"
+                    ng-keydown="$event.key === 'Escape' && $ctrl.closeMenu(col)">
+                  <li ng-repeat="o in col.operators track by o.operator" role="option" aria-selected="{{ $ctrl.cells[col.key].operator === o.operator }}">
+                    <button type="button" class="dropdown__item" ng-class="{ 'is-active': $ctrl.cells[col.key].operator === o.operator }"
+                            ng-click="$ctrl.chooseOperator(col, o.operator)">{{ o.text }}</button>
+                  </li>
+                </ul>
+              </div>
+
+              <button type="button" class="filter-cell__btn filter-cell__clear" ng-if="$ctrl.cellActive(col)"
+                      title="Clear" aria-label="Clear {{ col.label }} filter" ng-click="$ctrl.clearCell(col)">×</button>
+            </div>
+          </th>
+          <th ng-if="$ctrl.hasActions()">
+            <button type="button" class="link-btn grid__clear-filters" ng-if="$ctrl.activeFilterCount > 0" ng-click="$ctrl.clearAllFilters()">
+              Clear filters ({{ $ctrl.activeFilterCount }})
+            </button>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr ng-if="!$ctrl.viewRows.length">
+          <td class="grid__state" colspan="{{ $ctrl.colspan() }}">No records match the current search or filters.</td>
+        </tr>
+        <tr ng-repeat="row in $ctrl.viewRows track by $ctrl.trackRow(row, $index)" ng-class="[$ctrl.rowClass(row), { 'is-selected': $ctrl.isSelected(row) }]">
+          <td class="grid__select">
+            <input type="checkbox" aria-label="Select row" ng-checked="$ctrl.isSelected(row)" ng-click="$ctrl.onToggleSelect({ id: row.id })">
+          </td>
+          <td ng-repeat="col in $ctrl.visibleColumns track by col.key" ng-switch="col.key" ng-class="['cell--' + col.key, { nowrap: col.key === 'created' }]">
+            <span ng-switch-when="id" class="id-cell">
+              <code class="id-cell__value" title="{{ row.id }}">{{ $ctrl.shortId(row.id) }}</code>
+              <button type="button" class="id-cell__copy" ng-click="$ctrl.copyId(row)" title="Copy the full id" aria-label="Copy correspondence id {{ row.id }}">
+                {{ $ctrl.copiedId === row.id ? 'Copied' : 'Copy' }}
+              </button>
+            </span>
+            <span ng-switch-when="created">{{ row.created | ccDateTime }}</span>
+            <span ng-switch-when="status" class="status-badge" ng-class="$ctrl.badgeClass(row)">{{ row.status || '—' }}</span>
+            <span ng-switch-when="sla" class="sla-cell" ng-class="'sla-cell--' + (row.sla.state || 'none')" title="{{ $ctrl.slaTitle(row.sla) }}">
+              <span class="sla-cell__age">{{ row.sla ? $ctrl.formatAge(row.sla.elapsedSeconds) : '—' }}</span>
+              <span class="sla-pill" ng-if="row.sla" ng-class="'sla-pill--' + row.sla.state">{{ $ctrl.slaLabel(row.sla) }}</span>
+              <span class="sla-cell__bar" ng-if="row.sla && (row.sla.state === 'OnTrack' || row.sla.state === 'AtRisk')" aria-hidden="true">
+                <span ng-style="{ width: (row.sla.percentUsed > 100 ? 100 : row.sla.percentUsed) + '%' }"></span>
+              </span>
+            </span>
+            <button type="button" ng-switch-when="docId" class="link-btn doc-link" ng-click="$ctrl.onDetails({ row: row })"
+                    title="Open the record's details">{{ row.docId || '—' }}</button>
+            <span ng-switch-default class="cell-text" title="{{ row[col.key] }}">{{ row[col.key] }}</span>
+          </td>
+          <td class="grid__actions" ng-if="$ctrl.hasActions()">
+            <button type="button" class="icon-btn icon-btn--details" title="Details, status timeline and activity"
+                    aria-label="Details for {{ row.docId || row.id }}" ng-click="$ctrl.onDetails({ row: row })">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>
+            </button>
+            <button type="button" class="icon-btn icon-btn--more" ng-if="$ctrl.compactActions" title="More actions"
+                    aria-label="More actions for {{ row.docId || row.id }}" aria-haspopup="menu" aria-expanded="{{ $ctrl.rowMenu.row === row }}"
+                    ng-class="{ 'is-open': $ctrl.rowMenu.row === row }" ng-click="$ctrl.openRowMenu(row, $event)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+            </button>
+            <span class="grid__actions-full" ng-if="!$ctrl.compactActions">
+            <!-- Icon buttons; each has a tooltip (title) and a spoken label (aria-label). View stays in place,
+                 disabled, when a record has no payload so the icons line up from row to row. -->
+            <button type="button" class="icon-btn icon-btn--view" ng-if="$ctrl.canViewPayload" ng-disabled="!row.payload"
+                    title="{{ row.payload ? 'View payload' : 'No payload stored for this record' }}"
+                    aria-label="View payload for {{ row.docId || row.id }}" ng-click="$ctrl.onViewPayload({ row: row })">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button type="button" class="icon-btn icon-btn--explain" ng-if="$ctrl.canExplain" title="Explain with the AI assistant"
+                    aria-label="Explain record {{ row.docId || row.id }} with the AI assistant" ng-click="$ctrl.onExplain({ row: row })">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+            </button>
+            <button type="button" class="icon-btn icon-btn--pdf" ng-if="$ctrl.showPdf()"
+                    ng-class="'icon-btn--pdf-' + $ctrl.pdfIcon(row).css" ng-disabled="!$ctrl.pdfIcon(row).enabled"
+                    title="{{ $ctrl.pdfIcon(row).title }}" aria-label="{{ $ctrl.pdfIcon(row).title }} for {{ row.docId || row.id }}"
+                    ng-click="$ctrl.onPdf({ row: row })">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+            </button>
+            <button type="button" class="icon-btn icon-btn--danger" ng-if="$ctrl.canDelete" title="Delete (moves to the recycle bin)"
+                    aria-label="Delete record {{ row.docId || row.id }}" ng-click="$ctrl.onDelete({ row: row })">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>
+            </button>
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Row actions menu (compact grids) -->
+  <div class="row-menu" ng-if="$ctrl.rowMenu" ng-style="$ctrl.rowMenu.style" role="menu" aria-label="Actions for {{ $ctrl.rowMenu.row.docId || $ctrl.rowMenu.row.id }}"
+       cc-click-outside="$ctrl.closeRowMenu()" ng-keydown="$event.key === 'Escape' && $ctrl.closeRowMenu()">
+    <div class="row-menu__title">{{ $ctrl.rowMenu.row.docId || $ctrl.rowMenu.row.id }}</div>
+    <button type="button" class="row-menu__item" role="menuitem" ng-click="$ctrl.rowAction($ctrl.onDetails)" cc-focus-when="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>Details
+    </button>
+    <button type="button" class="row-menu__item" role="menuitem" ng-if="$ctrl.canViewPayload" ng-disabled="!$ctrl.rowMenu.row.payload"
+            ng-click="$ctrl.rowAction($ctrl.onViewPayload)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      {{ $ctrl.rowMenu.row.payload ? 'View payload' : 'No payload stored' }}
+    </button>
+    <button type="button" class="row-menu__item row-menu__item--explain" role="menuitem" ng-if="$ctrl.canExplain" ng-click="$ctrl.rowAction($ctrl.onExplain)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>Explain with AI
+    </button>
+    <button type="button" class="row-menu__item" role="menuitem" ng-if="$ctrl.showPdf()" ng-disabled="!$ctrl.pdfIcon($ctrl.rowMenu.row).enabled"
+            ng-click="$ctrl.rowAction($ctrl.onPdf)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+      {{ $ctrl.pdfIcon($ctrl.rowMenu.row).title }}
+    </button>
+    <div class="row-menu__sep" ng-if="$ctrl.canDelete" role="separator"></div>
+    <button type="button" class="row-menu__item row-menu__item--danger" role="menuitem" ng-if="$ctrl.canDelete" ng-click="$ctrl.rowAction($ctrl.onDelete)">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete…
+    </button>
+  </div>
+
+  <pagination ng-if="$ctrl.pageSizeOptions"
+              current-page="$ctrl.page"
+              page-size="$ctrl.pageSize"
+              total-items="$ctrl.total"
+              page-size-options="$ctrl.pageSizeOptions"
+              on-page-change="$ctrl.pageChange(page)"
+              on-page-size-change="$ctrl.pageSizeChange(size)"></pagination>
+</div>

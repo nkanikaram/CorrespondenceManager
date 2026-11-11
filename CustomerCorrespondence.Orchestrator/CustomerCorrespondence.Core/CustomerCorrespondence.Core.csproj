@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>ECCO.CommunicationManager.Core</PackageId>
+    <Version>1.0.1</Version>
+    <Authors>ECCO Development Team</Authors>
+    <Company>S9uareRoot LLC</Company>
+    <Product>ECCO Communication Manager</Product>
+    <Description>Core shared library for ECCO Communication Manager providing Result pattern for functional error handling and standardized API response models.</Description>
+    <Copyright>Copyright © 2024-2026 S9uareRoot LLC. All rights reserved.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</PackageProjectUrl>
+    <RepositoryUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryBranch>feature/3460848-Update-ECCO-with-Nuget</RepositoryBranch>
+    <PackageTags>ecco;Core;result-pattern;api-responses</PackageTags>
+    <PackageReleaseNotes>
+      Version 1.0.1 (Current Release)
+      - Result pattern (Result, Result&lt;T&gt;) for functional error handling without exceptions
+      - API response models (BaseResponse&lt;T&gt;, ErrorResponse) for consistent API responses
+      - Zero external dependencies - completely standalone
+      - Full .NET 8 support with nullable reference types
+      - Extracted from Common library for lightweight Core functionality
+    </PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- Build Configuration -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    
+    <!-- Assembly Information -->
+    <AssemblyTitle>ECCO Communication Manager - Core</AssemblyTitle>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CustomerCorrespondence.Domain\CustomerCorrespondence.Domain.csproj" />
+    <ProjectReference Include="..\CustomerCorrespondence.Exceptions\CustomerCorrespondence.Exceptions.csproj" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+</Project>

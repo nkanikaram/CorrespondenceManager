@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>ECCO.CommunicationManager.Resilience</PackageId>
+    <Version>1.0.1</Version>
+    <Authors>ECCO Development Team</Authors>
+    <Company>S9uareRoot LLC</Company>
+    <Product>ECCO Communication Manager</Product>
+    <Description>Resilience patterns for ECCO Communication Manager with Polly-based retry policies, exponential backoff, and fault handling for HTTP operations and transient failures.</Description>
+    <Copyright>Copyright © 2024-2026 S9uareRoot LLC. All rights reserved.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</PackageProjectUrl>
+    <RepositoryUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryBranch>feature/3460848-Update-ECCO-with-Nuget</RepositoryBranch>
+    <PackageTags>ecco;resilience;polly;retry;fault-handling;circuit-breaker;exponential-backoff</PackageTags>
+    <PackageReleaseNotes>
+      Version 1.0.1 (Current Release)
+      - RetryPolicyHelper with Polly integration
+      - HTTP retry policy with exponential backoff (CreateHttpRetryPolicy)
+      - General retry policy with logging support (CreateRetryPolicyWithLogging)
+      - Helper method for executing operations with retry (ExecuteWithRetryAsync)
+      - Configurable retry count and initial delay
+      - Full .NET 8 support with nullable reference types
+      - Extracted from Common library for focused resilience functionality
+    </PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- Build Configuration -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    
+    <!-- Assembly Information -->
+    <AssemblyTitle>ECCO Communication Manager - Resilience</AssemblyTitle>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Polly" Version="8.3.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

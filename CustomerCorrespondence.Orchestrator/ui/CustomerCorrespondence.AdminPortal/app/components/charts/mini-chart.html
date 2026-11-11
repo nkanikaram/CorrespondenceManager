@@ -1,0 +1,60 @@
+<div class="mini-chart">
+  <div class="mini-chart__title">{{ $ctrl.chart.title }}</div>
+  <div class="mini-chart__empty" ng-if="$ctrl.empty">No data to chart.</div>
+
+  <!-- Horizontal bars -->
+  <div ng-if="!$ctrl.empty && $ctrl.kind === 'bar'">
+    <div class="mini-bar" ng-repeat="e in $ctrl.bars track by e.label">
+      <div class="mini-bar__label" title="{{ e.label }}">{{ e.label }}</div>
+      <div class="mini-bar__track"><div class="mini-bar__fill" ng-style="{ width: e.width + '%', background: e.color }"></div></div>
+      <div class="mini-bar__value">{{ e.count }}</div>
+    </div>
+  </div>
+
+  <!-- Single pie / donut -->
+  <div class="mini-pie" ng-if="!$ctrl.empty && ($ctrl.kind === 'pie' || $ctrl.kind === 'donut')">
+    <svg ng-attr-width="{{ $ctrl.size }}" ng-attr-height="{{ $ctrl.size }}" ng-attr-view_box="0 0 {{ $ctrl.size }} {{ $ctrl.size }}" class="mini-pie__svg">
+      <path ng-repeat="w in $ctrl.wedges track by w.label" ng-attr-d="{{ w.d }}" ng-attr-fill="{{ w.color }}" class="chart-wedge">
+        <title>{{ w.label }}: {{ w.count }}</title>
+      </path>
+    </svg>
+    <div class="mini-legend mini-legend--column">
+      <div class="mini-legend__item" ng-repeat="w in $ctrl.wedges track by w.label">
+        <span class="swatch" ng-style="{ background: w.color }"></span>
+        <span class="mini-legend__label" title="{{ w.label }}">{{ w.label }}</span>
+        <span class="mini-legend__value">{{ w.count }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cross-tab: shared legend -->
+  <div class="mini-legend" ng-if="!$ctrl.empty && ($ctrl.kind === 'stacked' || $ctrl.kind === 'pie-multi' || $ctrl.kind === 'donut-multi')">
+    <div class="mini-legend__item" ng-repeat="s in $ctrl.segments track by s.name">
+      <span class="swatch" ng-style="{ background: s.color }"></span><span class="mini-legend__label">{{ s.name }}</span>
+    </div>
+  </div>
+
+  <!-- Cross-tab as one stacked bar per row -->
+  <div ng-if="!$ctrl.empty && $ctrl.kind === 'stacked'">
+    <div class="mini-bar" ng-repeat="r in $ctrl.rows track by r.label">
+      <div class="mini-bar__label" title="{{ r.label }}">{{ r.label }}</div>
+      <div class="mini-bar__track mini-bar__track--stacked">
+        <div ng-repeat="p in r.parts track by p.name" title="{{ p.name }}: {{ p.count }}" ng-style="{ width: p.width + '%', background: p.color }"></div>
+      </div>
+      <div class="mini-bar__value">{{ r.total }}</div>
+    </div>
+  </div>
+
+  <!-- Cross-tab as small multiples: one pie/donut per outer group -->
+  <div class="mini-multiples" ng-if="!$ctrl.empty && ($ctrl.kind === 'pie-multi' || $ctrl.kind === 'donut-multi')">
+    <div class="mini-multiples__item" ng-repeat="g in $ctrl.groups track by g.label" ng-style="{ width: $ctrl.size + 'px' }">
+      <svg ng-attr-width="{{ $ctrl.size }}" ng-attr-height="{{ $ctrl.size }}" ng-attr-view_box="0 0 {{ $ctrl.size }} {{ $ctrl.size }}">
+        <path ng-repeat="w in g.wedges track by w.label" ng-attr-d="{{ w.d }}" ng-attr-fill="{{ w.color }}" class="chart-wedge">
+          <title>{{ w.label }}: {{ w.count }}</title>
+        </path>
+      </svg>
+      <div class="mini-multiples__label" title="{{ g.label }}">{{ g.label }}</div>
+      <div class="mini-legend__value">{{ g.total }}</div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,15 @@
+[
+  {
+    "userid": "MI-D01-ECCO",
+    "permissions": ["select", "insert", "update", "delete", "execute"]
+  },
+  {
+    "userid": "r-app-ecco-developers-lsa",
+    "permissions": [ "select", "insert", "update", "delete", "execute", "view definition", "showplan", "view database state" ],
+    "dbRoles": "db_ddladmin"
+  },
+  {
+    "userid": "SP-D01-NP",
+    "permissions": [ "select", "insert", "update", "delete", "execute" ]
+  }
+]

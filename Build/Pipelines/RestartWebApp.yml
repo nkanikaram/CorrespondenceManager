@@ -1,0 +1,76 @@
+trigger: none
+
+resources:
+  repositories:
+  - repository: ECCO-CommunicationManager
+    type: git
+    name: CorporateServices/ECCO-CommunicationManager
+    ref: main
+
+parameters:
+  - name: Environment
+    displayName: "Environment to deploy"
+    type: string
+    default: DVLP
+    values:
+      - DVLP
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscriptions to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - name: RG_ENVCODE
+      value: D03
+    - name: RGName
+      value: 'RG-CMFG-$(RG_ENVCODE)-ECCO'
+    - name: AppName
+      value: 'AS-CMFG-$(RG_ENVCODE)-ECCO'
+    - name: Subscription
+      value: 'Corporate NonProd Corporate'
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: RG_ENVCODE
+      value: M01
+    - name: RGName
+      value: 'RG-CMFG-$(RG_ENVCODE)-ECCO'
+    - name: AppName
+      value: 'AS-CMFG-$(RG_ENVCODE)-ECCO'
+    - name: Subscription
+      value: 'Corporate NonProd Corporate'
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: RG_ENVCODE
+      value: P01
+    - name: RGName
+      value: 'RG-CMFG-$(RG_ENVCODE)-ECCO'
+    - name: AppName
+      value: 'AS-CMFG-$(RG_ENVCODE)-ECCO'
+    - name: Subscription
+      value: 'Corporate Prod Corporate'
+
+stages:
+- stage: RestartWebApp
+  displayName: 'Restart Web App'
+  jobs:
+  - job: 'Restart'
+    displayName: 'Restart Web App'
+    cancelTimeoutInMinutes: 1
+    pool:
+      name: Azure Pipelines
+      vmImage: 'windows-latest'
+    workspace:
+      clean: all
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Restart Azure App Service'
+      inputs:
+        azureSubscription: '$(Subscription)'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+           az webapp restart --resource-group $(RGName) --name $(AppName)

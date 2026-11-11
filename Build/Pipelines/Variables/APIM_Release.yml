@@ -1,0 +1,7 @@
+variables:
+    FolderPath: '$(System.DefaultWorkingDirectory)/ECCO-CommunicationManager/APIM'
+    PolicyFolderPath: '$(System.DefaultWorkingDirectory)/ECCO-CommunicationManager/APIM'
+    API_Def: 'CommManagerAPI_Definition.json'
+    Product_def: 'CommManagerAPI_Product.json'
+    CherwellDescription: 'CommManagerAPI Deployment in APIM'
+    TemplateID: '1231'

@@ -1,0 +1,9 @@
+variables:
+    APIMURI: 'https://dev-apimanager.trustage.com/ecco'
+    BackendURI: 'https://commmanager.trustagedev.com/api/commmanager'
+    Environment: 'Dev'
+    MonitoringRoleGroup: 'R-App-APIMonitoring-NonProd'
+    OIDCDiscoveryURI: 'https://dev-apimanager.trustage.com/openid-configuration/V1/.well-known/openid-configuration'
+    RoleGroup: 'R-App-ServiceGateway-ECCO-Nonprod'
+    OIDCDiscoverySubscriptionKey: '<REDACTED>'
+    APIMAccessRoleGroup: 'R-App-ECCO-Developers-LSA'

@@ -1,0 +1,40 @@
+<div class="validation" ng-if="$ctrl.validation && $ctrl.validation.summary.totalIssues > 0">
+  <div class="validation__summary">
+    <span class="muted">Validation:</span>
+    <span class="pill pill--danger" ng-if="$ctrl.validation.summary.errorCount > 0">🔴 {{ $ctrl.validation.summary.errorCount | ccPlural:'Error' }}</span>
+    <span class="pill pill--warning" ng-if="$ctrl.validation.summary.warningCount > 0">🟡 {{ $ctrl.validation.summary.warningCount | ccPlural:'Warning' }}</span>
+    <span class="pill pill--info" ng-if="$ctrl.validation.summary.suggestionCount > 0">💡 {{ $ctrl.validation.summary.suggestionCount | ccPlural:'Suggestion' }}</span>
+  </div>
+
+  <div class="alert alert--neutral validation__debug" ng-if="$ctrl.validation.summary.errorCount > 0">
+    <span class="muted">🔍 Debug Info:</span>
+    <button type="button" class="link-btn" ng-click="$ctrl.showDebug = !$ctrl.showDebug">{{ $ctrl.showDebug ? 'Hide' : 'Show' }} Details</button>
+    <pre class="code-block code-block--small" ng-if="$ctrl.showDebug && $ctrl.jsonPayload">{{ $ctrl.rawPreview() }}</pre>
+  </div>
+
+  <div class="alert alert--danger" ng-if="$ctrl.validation.errors.length">
+    <div class="alert__heading">⛔ Blocking Issues</div>
+    <div class="validation__item" ng-repeat="issue in $ctrl.validation.errors track by $index">
+      <strong>{{ issue.message }}</strong>
+      <div class="validation__hint" ng-if="issue.suggestion">💡 {{ issue.suggestion }}</div>
+      <button type="button" class="btn btn--xs btn--outline-danger" ng-if="issue.autoFix && $ctrl.onApplySuggestion" ng-click="$ctrl.apply(issue)">Apply Fix: {{ issue.autoFix }}</button>
+    </div>
+  </div>
+
+  <div class="alert alert--warning" ng-if="$ctrl.validation.warnings.length">
+    <div class="alert__heading">⚠️ Optional Issues</div>
+    <div class="validation__item" ng-repeat="issue in $ctrl.validation.warnings track by $index">
+      <strong>{{ issue.message }}</strong>
+      <div class="validation__hint" ng-if="issue.suggestion">💡 {{ issue.suggestion }}</div>
+      <button type="button" class="btn btn--xs btn--outline-warning" ng-if="issue.autoFix && $ctrl.onApplySuggestion" ng-click="$ctrl.apply(issue)">Apply Fix: {{ issue.autoFix }}</button>
+    </div>
+  </div>
+
+  <div class="alert alert--info" ng-if="$ctrl.validation.suggestions.length">
+    <div class="alert__heading">💡 Enhancement Suggestions</div>
+    <div class="validation__item" ng-repeat="issue in $ctrl.validation.suggestions track by $index">
+      <strong>{{ issue.message }}</strong>
+      <div class="validation__hint" ng-if="issue.suggestion">→ {{ issue.suggestion }}</div>
+    </div>
+  </div>
+</div>

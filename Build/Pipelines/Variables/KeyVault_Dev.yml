@@ -1,0 +1,22 @@
+variables:
+    DbConnectionString: '<REDACTED>'
+    ServiceBusConnectionString: '<REDACTED>'
+    MIClientId: 'd9ac6358-be87-403d-b7fc-d789ca7f53df'
+    AzureServiceBusFullyQualifiedURL: 'sb://NSB-ECCO-Namespace-D01.servicebus.windows.net'
+    ServiceBusPSAKConnectionString: '<REDACTED - set as a secret pipeline variable or in Key Vault>'
+    ServiceBusSSAKConnectionString: '<REDACTED>'
+    NumberOfRetriesOnFailure: '3'
+    NumberOfDelayedRetriesOnFailure: '3'
+    DelayBetweenRetriesInSeconds: '10'
+    FailedMessageEndpoint: 'eccofailedmessagesqueue'
+    DocIDApiEndpointUrl: 'https://dev-apimanager.trustage.com/DocIDGeneratorService/v1/?soapAction=http://tempuri.org/GenerateOneID'
+    DocSoapAction: 'http://tempuri.org/GenerateOneID'
+    DocSubscriptionKey: '<REDACTED>'
+    DocSoapEnvelope: "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><GenerateOneID xmlns=\"http://tempuri.org/\" /></soap:Body></soap:Envelope>"
+    BearerServiceAccountClientId: 'SA-ECCO-M'
+    BearerTokenEndpoint: 'https://dev-apimanager.trustage.com/openid-connect-authorization/token/V1/as/token.oauth2'
+    BearerTokenScope: 'openid profile address email'
+    MultiDocSoapAction: 'http://tempuri.org/GenerateIDs'
+    MultiDocSoapEnvelope: "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><GenerateIDs xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://tempuri.org/\"><intNumberOfIds>500</intNumberOfIds></GenerateIDs></soap:Body></soap:Envelope>"
+    DocIdCount: '10'
+    DocIDThreshold: '3'

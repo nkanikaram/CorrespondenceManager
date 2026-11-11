@@ -1,0 +1,132 @@
+trigger: none
+
+parameters:
+  - name: Environment
+    displayName: "Environment to deploy"
+    type: string
+    default: DVLP
+    values:
+      - DVLP
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscriptions to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+ 
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - name: RG_ENVCODE
+      value: D02
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: RG_ENVCODE
+      value: M01
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: RG_ENVCODE
+      value: P01
+
+  - name: DataSource
+    value: 'sql-eccdb-$(RG_ENVCODE).database.windows.net'
+  - name: DataBase
+    value: 'ECCDB-$(RG_ENVCODE)'
+  - name: selfSrcCheckoutPath
+    value: s/ECCO-CommunicationManager
+  - name: selfSrcRoot
+    value: $(Agent.BuildDirectory)/s/ECCO-CommunicationManager
+  - name: SQL_FILE
+    value: '$(selfSrcRoot)/Build/DBScripts/ECCODBTableScript.sql'
+
+stages:
+- stage: AdhocSQLDVLP
+  jobs:
+  - job: DeployDACPAC
+    displayName: 'Deploy to DVLP Database'
+    pool: Release-Corporate-NP
+    steps:
+     - checkout: self
+       path: $(selfSrcCheckoutPath)  
+     - task: CmfgReleaseTask@1
+       displayName: 'CMFG Release Task'
+       inputs:
+         AIMObject: 'Non-Managed Accounts-Non-ManagedAIMAccounts-SA-RM-Corporate-M'
+         AIMSafe: 'SVR-WIN-CMU-AIM-ALL'
+         AIMReason: 'Release Management deployment'
+         PasswordVariableName: 'svr_password'
+         SearchBlacklistedFiles: false
+         SearchBlacklistedConfig: false
+         SearchBlacklistedDbCommand: false
+         IncludeArchiveFiles: false
+     - task: SqlAzureDacpacDeployment@1
+       displayName: 'Azure SQL deploy Task'
+       inputs:
+         azureSubscription: '${{ parameters.Subscription }}' 
+         AuthenticationType: aadAuthenticationPassword
+         ServerName: '$(DataSource)' 
+         DatabaseName: '$(DataBase)'
+         aadSqlUsername: 'SA-RM-Corporate-M@cmutual.com'
+         aadSqlPassword: '$(svr_password)'
+         deployType: SqlTask
+         SqlFile: $(SQL_FILE)
+- stage: AdhocSQLDEMO
+  jobs:
+  - job: DeployDACPAC
+    displayName: 'Deploy to DEMO Database'
+    pool: Release-Corporate-NP
+    steps:
+     - checkout: self
+       path: $(selfSrcCheckoutPath)  
+     - task: CmfgReleaseTask@1
+       displayName: 'CMFG Release Task'
+       inputs:
+         AIMObject: 'Non-Managed Accounts-Non-ManagedAIMAccounts-SA-RM-Corporate-M'
+         AIMSafe: 'SVR-WIN-CMU-AIM-ALL'
+         AIMReason: 'Release Management deployment'
+         PasswordVariableName: 'svr_password'
+         SearchBlacklistedFiles: false
+         SearchBlacklistedConfig: false
+         SearchBlacklistedDbCommand: false
+         IncludeArchiveFiles: false
+     - task: SqlAzureDacpacDeployment@1
+       displayName: 'Azure SQL deploy Task'
+       inputs:
+         azureSubscription: '${{ parameters.Subscription }}' 
+         AuthenticationType: aadAuthenticationPassword
+         ServerName: '$(DataSource)' 
+         DatabaseName: '$(DataBase)'
+         aadSqlUsername: 'SA-RM-Corporate-M@cmutual.com'
+         aadSqlPassword: '$(svr_password)'
+         deployType: SqlTask
+         SqlFile: $(SQL_FILE)
+- stage: AdhocSQLPROD
+  jobs:
+  - job: DeployDACPAC
+    displayName: 'Deploy to PROD Database'
+    pool: Release-Prod-Corporate-2016
+    steps:
+     - checkout: self
+       path: $(selfSrcCheckoutPath)  
+     - task: CmfgReleaseTask@1
+       displayName: 'CMFG Release Task'
+       inputs:
+         AIMObject: 'Non-Managed Accounts-Non-Managed AIM Accounts-SA-RM-Corporate-P'
+         AIMSafe: 'SVR-WIN-CMU-AIM-ALL'
+         AIMReason: 'Release Management deployment'
+         PasswordVariableName: 'svr_password'
+         SearchBlacklistedFiles: false
+         SearchBlacklistedConfig: false
+         SearchBlacklistedDbCommand: false
+         IncludeArchiveFiles: false
+     - task: SqlAzureDacpacDeployment@1
+       displayName: 'Azure SQL deploy Task'
+       inputs:
+         azureSubscription: '${{ parameters.Subscription }}' 
+         AuthenticationType: aadAuthenticationPassword
+         ServerName: '$(DataSource)' 
+         DatabaseName: '$(DataBase)'
+         aadSqlUsername: 'SA-RM-Corporate-P@cmutual.com'
+         aadSqlPassword: '$(svr_password)'
+         deployType: SqlTask
+         SqlFile: $(SQL_FILE)

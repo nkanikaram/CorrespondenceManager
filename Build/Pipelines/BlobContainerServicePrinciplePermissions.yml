@@ -1,0 +1,104 @@
+# Applies permissions to service principals on Azure Storage Accounts
+
+trigger: none
+
+pool: Atlashostedagents
+
+resources:
+  repositories:
+    - repository: self
+    - repository: Atlas
+      type: git
+      name: SecureCloudEnablement/Atlas
+      ref: Releases/Current/Latest
+
+parameters:
+  - name: Environment
+    displayName: "Environment to apply permissions"
+    type: string
+    default: DEV
+    values:
+      - DEV
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscription to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+
+variables:
+  - ${{ if eq(parameters.Environment, 'DEV') }}:
+    - name: StorageAccountName
+      value: 'sacmfgd03func'
+    - name: SuccessContainerName
+      value: 'ecco-success-dvlp'
+    - name: FailureContainerName
+      value: 'ecco-failure-dvlp'
+    - name: PermissionsFilePath
+      value: 'Build/Pipelines/Variables'
+    - name: PermissionsFileName
+      value: 'StorageAccountPermissions_Dev.json'
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: StorageAccountName
+      value: 'demostorageaccount'
+    - name: SuccessContainerName
+      value: 'ecco-success-demo'
+    - name: FailureContainerName
+      value: 'ecco-failure-demo'
+    - name: PermissionsFilePath
+      value: 'Build/Pipelines/Variables'
+    - name: PermissionsFileName
+      value: 'StorageAccountPermissions_Demo.json'
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: StorageAccountName
+      value: 'prodstorageaccount'
+    - name: SuccessContainerName
+      value: 'ecco-success-prod'
+    - name: FailureContainerName
+      value: 'ecco-failure-prod'
+    - name: PermissionsFilePath
+      value: 'Build/Pipelines/Variables'
+    - name: PermissionsFileName
+      value: 'StorageAccountPermissions_Prod.json'
+
+  - name: atlasSrcCheckoutPath
+    value: 's/Atlas'
+  - name: atlasSrcRoot
+    value: '$(Agent.BuildDirectory)/s/Atlas'
+  - name: selfSrcCheckoutPath
+    value: 's/ECCO-CommunicationManager'
+  - name: selfSrcRoot
+    value: $(Agent.BuildDirectory)/s/ECCO-CommunicationManager
+
+stages:
+- stage: ApplyStorageAccountPermissions
+  displayName: 'Apply Storage Account Permissions - ${{ parameters.Environment }}'
+  jobs:
+  - job: ApplyStoragePermissions
+    displayName: 'Apply Storage Account Permissions'
+    steps:
+    - checkout: self
+      displayName: 'Get ECCO-CommunicationManager repo'
+      path: $(selfSrcCheckoutPath)
+    - checkout: Atlas
+      displayName: 'Get Atlas scripts'
+      path: $(atlasSrcCheckoutPath)
+    - task: AzurePowerShell@5
+      displayName: 'Apply Permissions - $(SuccessContainerName)'
+      inputs:
+        azureSubscription: '${{ parameters.Subscription }}'
+        ScriptType: 'FilePath'
+        ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/applyStorageAccountPermissions.ps1'
+        ScriptArguments: '-StorageAccountName "$(StorageAccountName)" -ContainerName "$(SuccessContainerName)" -PermissionsFile "$(selfSrcRoot)/$(PermissionsFilePath)/$(PermissionsFileName)"'
+        azurePowerShellVersion: 'LatestVersion'
+    - task: AzurePowerShell@5
+      displayName: 'Apply Permissions - $(FailureContainerName)'
+      inputs:
+        azureSubscription: '${{ parameters.Subscription }}'
+        ScriptType: 'FilePath'
+        ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/applyStorageAccountPermissions.ps1'
+        ScriptArguments: '-StorageAccountName "$(StorageAccountName)" -ContainerName "$(FailureContainerName)" -PermissionsFile "$(selfSrcRoot)/$(PermissionsFilePath)/$(PermissionsFileName)"'
+        azurePowerShellVersion: 'LatestVersion'

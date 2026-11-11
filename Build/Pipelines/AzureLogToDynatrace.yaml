@@ -1,0 +1,41 @@
+trigger:
+- none
+
+pool:
+  name: 'AtlasHostedAgents'
+
+resources:
+  repositories:
+  - repository: Atlas
+    type: git
+    name: SecureCloudEnablement/Atlas
+    ref: Releases/Current/Latest
+  - repository: DynatraceEnablement
+    type: git
+    name: Internal Open Source/DynatraceEnablement
+    ref: main
+
+variables:
+  - name: APP_RG
+    value: RG-CMFG-M01-ECCO
+  - name: RES_NAME
+    value: AS-CMFG-M01-ECCO
+  - name: DYN_ENV
+    value: nonprod
+  - name: RES_TYPE
+    value: WebApp
+
+
+steps:
+
+- checkout: DynatraceEnablement
+
+- task: AzureCLI@2
+  displayName: 'Forward Logs to Dynatrace Event Hub'
+  inputs:
+    azureSubscription: 'Corporate NonProd Corporate'
+    scriptType: 'pscore'
+    scriptLocation: 'scriptPath'
+    scriptPath: '$(System.DefaultWorkingDirectory)/Azure/DynatraceAzureLogging-Atlas.ps1'
+    arguments: '-resourceGroup $(APP_RG) -resourceName $(RES_NAME) -resourceType $(RES_TYPE) -DTENV $(DYN_ENV)'
+  enabled: True

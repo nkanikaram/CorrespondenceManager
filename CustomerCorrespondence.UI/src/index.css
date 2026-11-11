@@ -1,0 +1,872 @@
+/* ═══════════════════════════════════════════════════════════
+   VS Code Dark+ theme — CustomerCorrespondence UI
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Design tokens ─────────────────────────────────────── */
+:root {
+    /* Core VS Code Dark+ palette */
+    --vsc-editor: #1e1e1e;
+    --vsc-sidebar: #252526;
+    --vsc-dropdown: #2d2d2d;
+    --vsc-titlebar: #3c3c3c;
+    --vsc-input: #3c3c3c;
+    --vsc-input-border: #616161;
+    --vsc-text: #d4d4d4;
+    --vsc-text-dim: #858585;
+    --vsc-border: #3e3e42;
+    --vsc-accent: #007acc;
+    --vsc-accent-hi: #1177bb;
+    --vsc-selection: #264f78;
+    --vsc-hover: #2a2d2e;
+    --vsc-active: #37373d;
+
+    /* Token colors (syntax-highlight inspired) */
+    --tok-green: #4ec994;
+    --tok-yellow: #dcdcaa;
+    --tok-orange: #ce9178;
+    --tok-blue: #9cdcfe;
+    --tok-purple: #c586c0;
+    --tok-red: #f44747;
+    --tok-cyan: #4fc1ff;
+
+    color-scheme: dark;
+
+    /* ── Kendo Default theme — CSS variable overrides ── */
+    /* Primary accent */
+    --kendo-color-primary: #007acc;
+    --kendo-color-primary-hover: #1177bb;
+    --kendo-color-primary-active: #005a9e;
+    --kendo-color-on-primary: #ffffff;
+
+    /* Body */
+    --kendo-body-bg: #1e1e1e;
+    --kendo-body-text: #d4d4d4;
+
+    /* Base component surface */
+    --kendo-component-bg: #252526;
+    --kendo-component-text: #d4d4d4;
+    --kendo-component-border: #3e3e42;
+
+    /* Grid / table — intentionally darker than the page background */
+    --kendo-table-bg: #111111;
+    --kendo-table-text: #d4d4d4;
+    --kendo-table-border: #2a2a2a;
+    --kendo-table-header-bg: #1a1a1a;
+    --kendo-table-header-text: #c8c8c8;
+    --kendo-table-header-border: #2a2a2a;
+    --kendo-table-alt-row-bg: #161616;
+    --kendo-table-hover-bg: #1e2a35;
+    --kendo-table-hover-text: #d4d4d4;
+    --kendo-table-selected-bg: #264f78;
+    --kendo-table-selected-text: #ffffff;
+
+    /* Inputs (fixes filter text) */
+    --kendo-input-bg: #3c3c3c;
+    --kendo-input-text: #d4d4d4;
+    --kendo-input-border: #616161;
+    --kendo-input-hover-bg: #454545;
+    --kendo-input-hover-border: #858585;
+    --kendo-input-focus-border: #007acc;
+    --kendo-input-focus-shadow: 0 0 0 1px #007acc;
+    --kendo-input-placeholder-text: #6a6a6a;
+
+    /* Pager */
+    --kendo-pager-bg: #1a1a1a;
+    --kendo-pager-text: #d4d4d4;
+    --kendo-pager-border: #2a2a2a;
+    --kendo-pager-item-hover-bg: #2a2d2e;
+    --kendo-pager-item-selected-bg: #007acc;
+    --kendo-pager-item-selected-text: #ffffff;
+
+    /* Buttons */
+    --kendo-button-bg: #3c3c3c;
+    --kendo-button-text: #d4d4d4;
+    --kendo-button-border: #555;
+    --kendo-button-hover-bg: #484848;
+    --kendo-button-active-bg: #264f78;
+
+    /* Popup / dropdown */
+    --kendo-popup-bg: #2d2d2d;
+    --kendo-popup-text: #d4d4d4;
+    --kendo-popup-border: #3e3e42;
+    --kendo-list-item-hover-bg: #2a2d2e;
+    --kendo-list-item-selected-bg: #264f78;
+    --kendo-list-item-selected-text: #ffffff;
+}
+
+/* ── Light Theme (when data-theme="light") ─────────────── */
+[data-theme="light"] {
+    /* Core Light palette */
+    --vsc-editor: #ffffff;
+    --vsc-sidebar: #f3f3f3;
+    --vsc-dropdown: #ececec;
+    --vsc-titlebar: #e8e8e8;
+    --vsc-input: #ececec;
+    --vsc-input-border: #d0d0d0;
+    --vsc-text: #333333;
+    --vsc-text-dim: #666666;
+    --vsc-border: #d4d4d4;
+    --vsc-accent: #0066cc;
+    --vsc-accent-hi: #0052a3;
+    --vsc-selection: #add6ff;
+    --vsc-hover: #f0f0f0;
+    --vsc-active: #e0e0e0;
+
+    /* Token colors */
+    --tok-green: #008000;
+    --tok-yellow: #795e26;
+    --tok-orange: #b5651d;
+    --tok-blue: #0000ff;
+    --tok-purple: #800080;
+    --tok-red: #d73a49;
+    --tok-cyan: #0184bc;
+
+    color-scheme: light;
+
+    /* ── Kendo Light theme — CSS variable overrides ── */
+    /* Primary accent */
+    --kendo-color-primary: #0066cc;
+    --kendo-color-primary-hover: #0052a3;
+    --kendo-color-primary-active: #003d7a;
+    --kendo-color-on-primary: #ffffff;
+
+    /* Body */
+    --kendo-body-bg: #ffffff;
+    --kendo-body-text: #333333;
+
+    /* Base component surface */
+    --kendo-component-bg: #f3f3f3;
+    --kendo-component-text: #333333;
+    --kendo-component-border: #d4d4d4;
+
+    /* Grid / table */
+    --kendo-table-bg: #ffffff;
+    --kendo-table-text: #333333;
+    --kendo-table-border: #e0e0e0;
+    --kendo-table-header-bg: #f5f5f5;
+    --kendo-table-header-text: #000000;
+    --kendo-table-header-border: #d0d0d0;
+    --kendo-table-alt-row-bg: #f9f9f9;
+    --kendo-table-hover-bg: #f0f7ff;
+    --kendo-table-hover-text: #333333;
+    --kendo-table-selected-bg: #cce5ff;
+    --kendo-table-selected-text: #000000;
+
+    /* Inputs */
+    --kendo-input-bg: #ececec;
+    --kendo-input-text: #333333;
+    --kendo-input-border: #d0d0d0;
+    --kendo-input-hover-bg: #e0e0e0;
+    --kendo-input-hover-border: #999999;
+    --kendo-input-focus-border: #0066cc;
+    --kendo-input-focus-shadow: 0 0 0 1px #0066cc;
+    --kendo-input-placeholder-text: #999999;
+
+    /* Pager */
+    --kendo-pager-bg: #f5f5f5;
+    --kendo-pager-text: #333333;
+    --kendo-pager-border: #d0d0d0;
+    --kendo-pager-item-hover-bg: #f0f0f0;
+    --kendo-pager-item-selected-bg: #0066cc;
+    --kendo-pager-item-selected-text: #ffffff;
+
+    /* Buttons */
+    --kendo-button-bg: #f0f0f0;
+    --kendo-button-text: #333333;
+    --kendo-button-border: #bfbfbf;
+    --kendo-button-hover-bg: #e0e0e0;
+    --kendo-button-active-bg: #cce5ff;
+
+    /* Popup / dropdown */
+    --kendo-popup-bg: #ffffff;
+    --kendo-popup-text: #333333;
+    --kendo-popup-border: #d4d4d4;
+    --kendo-list-item-hover-bg: #f0f0f0;
+    --kendo-list-item-selected-bg: #cce5ff;
+    --kendo-list-item-selected-text: #000000;
+}
+
+/* ── Azure Theme (Microsoft Azure colors) ────────────────── */
+[data-theme="azure"] {
+    /* Azure palette */
+    --vsc-editor: #0e1a3e;
+    --vsc-sidebar: #142d5e;
+    --vsc-dropdown: #1a3a7a;
+    --vsc-titlebar: #1e4497;
+    --vsc-input: #1a3a7a;
+    --vsc-input-border: #2563eb;
+    --vsc-text: #e0e7ff;
+    --vsc-text-dim: #94a3b8;
+    --vsc-border: #2563eb;
+    --vsc-accent: #0084d6;
+    --vsc-accent-hi: #0066b3;
+    --vsc-selection: #1e40af;
+    --vsc-hover: #1e3a8a;
+    --vsc-active: #1e40af;
+
+    color-scheme: dark;
+
+    --kendo-color-primary: #0084d6;
+    --kendo-color-primary-hover: #0066b3;
+    --kendo-color-primary-active: #004a8a;
+    --kendo-body-bg: #0e1a3e;
+    --kendo-body-text: #e0e7ff;
+    --kendo-component-bg: #142d5e;
+    --kendo-component-text: #e0e7ff;
+    --kendo-component-border: #2563eb;
+    --kendo-table-bg: #0a1229;
+    --kendo-table-text: #e0e7ff;
+    --kendo-table-border: #1e40af;
+    --kendo-table-header-bg: #142d5e;
+    --kendo-table-header-text: #bfdbfe;
+    --kendo-table-header-border: #2563eb;
+    --kendo-table-alt-row-bg: #0f1e3d;
+    --kendo-table-hover-bg: #1e3a8a;
+    --kendo-table-hover-text: #e0e7ff;
+    --kendo-table-selected-bg: #1e40af;
+    --kendo-table-selected-text: #ffffff;
+    --kendo-input-bg: #1a3a7a;
+    --kendo-input-text: #e0e7ff;
+    --kendo-input-border: #2563eb;
+    --kendo-input-hover-bg: #1e4497;
+    --kendo-input-hover-border: #3b82f6;
+    --kendo-input-focus-border: #0084d6;
+    --kendo-input-focus-shadow: 0 0 0 1px #0084d6;
+    --kendo-input-placeholder-text: #60a5fa;
+    --kendo-pager-bg: #142d5e;
+    --kendo-pager-text: #e0e7ff;
+    --kendo-pager-border: #2563eb;
+    --kendo-pager-item-hover-bg: #1e3a8a;
+    --kendo-pager-item-selected-bg: #0084d6;
+    --kendo-pager-item-selected-text: #ffffff;
+    --kendo-button-bg: #1e3a8a;
+    --kendo-button-text: #e0e7ff;
+    --kendo-button-border: #2563eb;
+    --kendo-button-hover-bg: #1e40af;
+    --kendo-button-active-bg: #1e40af;
+    --kendo-popup-bg: #1a3a7a;
+    --kendo-popup-text: #e0e7ff;
+    --kendo-popup-border: #2563eb;
+    --kendo-list-item-hover-bg: #1e3a8a;
+    --kendo-list-item-selected-bg: #1e40af;
+    --kendo-list-item-selected-text: #ffffff;
+}
+
+/* ── Meridian Theme (Ocean/Teal based) ────────────────────── */
+[data-theme="meridian"] {
+    /* Meridian palette */
+    --vsc-editor: #0d1f2d;
+    --vsc-sidebar: #10293a;
+    --vsc-dropdown: #133d52;
+    --vsc-titlebar: #164a63;
+    --vsc-input: #133d52;
+    --vsc-input-border: #1f7a8e;
+    --vsc-text: #d0e8f2;
+    --vsc-text-dim: #6b8895;
+    --vsc-border: #1f7a8e;
+    --vsc-accent: #2b9aa0;
+    --vsc-accent-hi: #1f7a8e;
+    --vsc-selection: #164a63;
+    --vsc-hover: #1a5a73;
+    --vsc-active: #1f7a8e;
+
+    color-scheme: dark;
+
+    --kendo-color-primary: #2b9aa0;
+    --kendo-color-primary-hover: #1f7a8e;
+    --kendo-color-primary-active: #164a63;
+    --kendo-body-bg: #0d1f2d;
+    --kendo-body-text: #d0e8f2;
+    --kendo-component-bg: #10293a;
+    --kendo-component-text: #d0e8f2;
+    --kendo-component-border: #1f7a8e;
+    --kendo-table-bg: #0a1620;
+    --kendo-table-text: #d0e8f2;
+    --kendo-table-border: #164a63;
+    --kendo-table-header-bg: #10293a;
+    --kendo-table-header-text: #a8d5e2;
+    --kendo-table-header-border: #1f7a8e;
+    --kendo-table-alt-row-bg: #0f262f;
+    --kendo-table-hover-bg: #1a5a73;
+    --kendo-table-hover-text: #d0e8f2;
+    --kendo-table-selected-bg: #164a63;
+    --kendo-table-selected-text: #ffffff;
+    --kendo-input-bg: #133d52;
+    --kendo-input-text: #d0e8f2;
+    --kendo-input-border: #1f7a8e;
+    --kendo-input-hover-bg: #164a63;
+    --kendo-input-hover-border: #2b9aa0;
+    --kendo-input-focus-border: #2b9aa0;
+    --kendo-input-focus-shadow: 0 0 0 1px #2b9aa0;
+    --kendo-input-placeholder-text: #4db8c4;
+    --kendo-pager-bg: #10293a;
+    --kendo-pager-text: #d0e8f2;
+    --kendo-pager-border: #1f7a8e;
+    --kendo-pager-item-hover-bg: #1a5a73;
+    --kendo-pager-item-selected-bg: #2b9aa0;
+    --kendo-pager-item-selected-text: #ffffff;
+    --kendo-button-bg: #1a5a73;
+    --kendo-button-text: #d0e8f2;
+    --kendo-button-border: #1f7a8e;
+    --kendo-button-hover-bg: #1f7a8e;
+    --kendo-button-active-bg: #164a63;
+    --kendo-popup-bg: #133d52;
+    --kendo-popup-text: #d0e8f2;
+    --kendo-popup-border: #1f7a8e;
+    --kendo-list-item-hover-bg: #1a5a73;
+    --kendo-list-item-selected-bg: #164a63;
+    --kendo-list-item-selected-text: #ffffff;
+}
+
+/* ── Nord Theme (Arctic cold palette) ────────────────── */
+[data-theme="nord"] {
+    /* Nord palette */
+    --vsc-editor: #2e3440;
+    --vsc-sidebar: #3b4252;
+    --vsc-dropdown: #434c5e;
+    --vsc-titlebar: #4c566a;
+    --vsc-input: #434c5e;
+    --vsc-input-border: #81a1c1;
+    --vsc-text: #eceff4;
+    --vsc-text-dim: #d1d5db;
+    --vsc-border: #81a1c1;
+    --vsc-accent: #88c0d0;
+    --vsc-accent-hi: #81a1c1;
+    --vsc-selection: #434c5e;
+    --vsc-hover: #4c566a;
+    --vsc-active: #81a1c1;
+
+    color-scheme: dark;
+
+    --kendo-color-primary: #88c0d0;
+    --kendo-color-primary-hover: #81a1c1;
+    --kendo-color-primary-active: #5e81ac;
+    --kendo-body-bg: #2e3440;
+    --kendo-body-text: #eceff4;
+    --kendo-component-bg: #3b4252;
+    --kendo-component-text: #eceff4;
+    --kendo-component-border: #81a1c1;
+    --kendo-table-bg: #2e3440;
+    --kendo-table-text: #eceff4;
+    --kendo-table-border: #4c566a;
+    --kendo-table-header-bg: #3b4252;
+    --kendo-table-header-text: #d8dee9;
+    --kendo-table-header-border: #81a1c1;
+    --kendo-table-alt-row-bg: #3b4252;
+    --kendo-table-hover-bg: #4c566a;
+    --kendo-table-hover-text: #eceff4;
+    --kendo-table-selected-bg: #434c5e;
+    --kendo-table-selected-text: #eceff4;
+    --kendo-input-bg: #434c5e;
+    --kendo-input-text: #eceff4;
+    --kendo-input-border: #81a1c1;
+    --kendo-input-hover-bg: #4c566a;
+    --kendo-input-hover-border: #88c0d0;
+    --kendo-input-focus-border: #88c0d0;
+    --kendo-input-focus-shadow: 0 0 0 1px #88c0d0;
+    --kendo-input-placeholder-text: #81a1c1;
+    --kendo-pager-bg: #3b4252;
+    --kendo-pager-text: #eceff4;
+    --kendo-pager-border: #81a1c1;
+    --kendo-pager-item-hover-bg: #4c566a;
+    --kendo-pager-item-selected-bg: #88c0d0;
+    --kendo-pager-item-selected-text: #2e3440;
+    --kendo-button-bg: #434c5e;
+    --kendo-button-text: #eceff4;
+    --kendo-button-border: #81a1c1;
+    --kendo-button-hover-bg: #4c566a;
+    --kendo-button-active-bg: #81a1c1;
+    --kendo-popup-bg: #434c5e;
+    --kendo-popup-text: #eceff4;
+    --kendo-popup-border: #81a1c1;
+    --kendo-list-item-hover-bg: #4c566a;
+    --kendo-list-item-selected-bg: #434c5e;
+    --kendo-list-item-selected-text: #eceff4;
+}
+
+/* ── Dracula Theme (Popular dark theme) ─────────────────– */
+[data-theme="dracula"] {
+    /* Dracula palette */
+    --vsc-editor: #282a36;
+    --vsc-sidebar: #21222c;
+    --vsc-dropdown: #1e1f29;
+    --vsc-titlebar: #191a21;
+    --vsc-input: #1e1f29;
+    --vsc-input-border: #6272a4;
+    --vsc-text: #f8f8f2;
+    --vsc-text-dim: #6272a4;
+    --vsc-border: #6272a4;
+    --vsc-accent: #bd93f9;
+    --vsc-accent-hi: #a78bfa;
+    --vsc-selection: #44475a;
+    --vsc-hover: #3a3d48;
+    --vsc-active: #6272a4;
+
+    color-scheme: dark;
+
+    --kendo-color-primary: #bd93f9;
+    --kendo-color-primary-hover: #a78bfa;
+    --kendo-color-primary-active: #9370db;
+    --kendo-body-bg: #282a36;
+    --kendo-body-text: #f8f8f2;
+    --kendo-component-bg: #21222c;
+    --kendo-component-text: #f8f8f2;
+    --kendo-component-border: #6272a4;
+    --kendo-table-bg: #1e1f29;
+    --kendo-table-text: #f8f8f2;
+    --kendo-table-border: #3a3d48;
+    --kendo-table-header-bg: #21222c;
+    --kendo-table-header-text: #e0e0e0;
+    --kendo-table-header-border: #6272a4;
+    --kendo-table-alt-row-bg: #282a36;
+    --kendo-table-hover-bg: #3a3d48;
+    --kendo-table-hover-text: #f8f8f2;
+    --kendo-table-selected-bg: #44475a;
+    --kendo-table-selected-text: #f8f8f2;
+    --kendo-input-bg: #1e1f29;
+    --kendo-input-text: #f8f8f2;
+    --kendo-input-border: #6272a4;
+    --kendo-input-hover-bg: #3a3d48;
+    --kendo-input-hover-border: #bd93f9;
+    --kendo-input-focus-border: #bd93f9;
+    --kendo-input-focus-shadow: 0 0 0 1px #bd93f9;
+    --kendo-input-placeholder-text: #6272a4;
+    --kendo-pager-bg: #21222c;
+    --kendo-pager-text: #f8f8f2;
+    --kendo-pager-border: #6272a4;
+    --kendo-pager-item-hover-bg: #3a3d48;
+    --kendo-pager-item-selected-bg: #bd93f9;
+    --kendo-pager-item-selected-text: #282a36;
+    --kendo-button-bg: #3a3d48;
+    --kendo-button-text: #f8f8f2;
+    --kendo-button-border: #6272a4;
+    --kendo-button-hover-bg: #44475a;
+    --kendo-button-active-bg: #6272a4;
+    --kendo-popup-bg: #1e1f29;
+    --kendo-popup-text: #f8f8f2;
+    --kendo-popup-border: #6272a4;
+    --kendo-list-item-hover-bg: #3a3d48;
+    --kendo-list-item-selected-bg: #44475a;
+    --kendo-list-item-selected-text: #f8f8f2;
+}
+
+/* ── Base reset ────────────────────────────────────────── */
+body {
+    margin: 0;
+    background: var(--vsc-editor);
+    color: var(--vsc-text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+#root {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100svh;
+}
+
+/* ── Kendo Dialog — theme it to match the app instead of Kendo's default light popup ── */
+
+.k-overlay {
+    background-color: rgba(0, 0, 0, 0.55) !important;
+}
+
+.k-dialog {
+    background-color: var(--vsc-titlebar) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-border) !important;
+    border-radius: 6px !important;
+}
+
+.k-window-titlebar,
+.k-dialog-titlebar {
+    background-color: var(--vsc-titlebar) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-border) !important;
+}
+
+.k-window-title,
+.k-dialog-title {
+    color: var(--vsc-text) !important;
+}
+
+.k-dialog-content {
+    background-color: var(--vsc-editor) !important;
+    color: var(--vsc-text) !important;
+}
+
+.k-dialog-buttongroup,
+.k-actions {
+    background-color: var(--vsc-titlebar) !important;
+    border-color: var(--vsc-border) !important;
+}
+
+.k-dialog .k-input,
+.k-dialog .k-input-inner {
+    background-color: var(--vsc-input) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-input-border) !important;
+}
+
+.k-dialog .k-button-solid-base {
+    background-color: var(--vsc-input) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-input-border) !important;
+}
+
+.k-dialog .k-button-solid-primary {
+    background-color: var(--vsc-accent) !important;
+    border-color: var(--vsc-accent) !important;
+    color: #fff !important;
+}
+
+.k-dialog .k-button-solid-error {
+    background-color: #c1443c !important;
+    border-color: #c1443c !important;
+    color: #fff !important;
+}
+
+/* ── Kendo Grid — structural dark overrides ────────────── */
+
+.k-grid {
+    background-color: var(--vsc-editor);
+    color: var(--vsc-text);
+    border-color: var(--vsc-border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* Kendo's default theme hardcodes this wrapper to white; without this override, any
+   translucent row color (status highlights) blends against white instead of the theme. */
+.k-grid-content,
+.k-grid-content-locked,
+.k-grid-table {
+    background-color: var(--vsc-editor) !important;
+}
+
+/* Column headers */
+.k-grid-header,
+.k-grid-header-wrap,
+.k-grid-header .k-header,
+.k-grid-header .k-table-th {
+    background-color: var(--vsc-titlebar) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-border) !important;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+/* Accent underline on sorted column header */
+.k-grid-header .k-header.k-sorted,
+.k-grid-header .k-table-th.k-sorted {
+    background-color: color-mix(in srgb, var(--vsc-accent) 18%, var(--vsc-titlebar)) !important;
+    box-shadow: inset 0 -2px 0 var(--vsc-accent);
+}
+
+/* ── Filter row — the main fix ─────────────────────────── */
+.k-filter-row td,
+.k-filter-row th {
+    background-color: var(--vsc-titlebar) !important;
+    border-color: var(--vsc-border) !important;
+    padding: 4px 6px !important;
+}
+
+/* All variants Kendo uses for filter inputs */
+.k-filter-row .k-input,
+.k-filter-row .k-textbox,
+.k-filter-row .k-dateinput,
+.k-filter-row .k-dropdownlist,
+.k-grid .k-filtercell .k-input,
+.k-grid .k-filtercell .k-textbox {
+    background-color: var(--vsc-input) !important;
+    border-color: var(--vsc-input-border) !important;
+    border-radius: 3px !important;
+}
+
+/* The actual typed text lives in .k-input-inner */
+.k-filter-row .k-input-inner,
+.k-filter-row input,
+.k-grid .k-filtercell .k-input-inner,
+.k-grid .k-filtercell input {
+    background-color: var(--vsc-input) !important;
+    color: var(--vsc-text) !important;
+    caret-color: var(--vsc-accent) !important;
+    font-size: 12px !important;
+}
+
+.k-filter-row .k-input:focus-within,
+.k-grid .k-filtercell .k-input:focus-within {
+    border-color: var(--vsc-accent) !important;
+    box-shadow: 0 0 0 1px var(--vsc-accent) !important;
+}
+
+/* Filter operator button */
+.k-filter-row .k-input-button,
+.k-filter-row .k-button,
+.k-grid .k-filtercell .k-input-button {
+    background-color: var(--vsc-input) !important;
+    color: var(--vsc-text-dim) !important;
+    border-color: var(--vsc-input-border) !important;
+}
+
+.k-filter-row .k-input-button:hover,
+.k-grid .k-filtercell .k-input-button:hover {
+    background-color: var(--vsc-hover) !important;
+    color: var(--vsc-text) !important;
+}
+
+/* ── Grid rows ─────────────────────────────────────────── */
+.k-grid tbody tr,
+.k-grid .k-table-row {
+    background-color: var(--vsc-editor);
+    color: var(--vsc-text);
+    border-color: var(--vsc-border);
+    transition: background-color 80ms ease;
+    position: relative;
+}
+
+/* Alternating row stripe */
+.k-grid tbody tr:nth-child(even),
+.k-grid .k-table-row:nth-child(even) {
+    background-color: color-mix(in srgb, var(--vsc-editor) 92%, var(--vsc-text) 8%);
+}
+
+/* Hover — left accent bar like VS Code's list hover */
+.k-grid tbody tr:hover,
+.k-grid tbody tr.k-hover,
+.k-grid .k-table-row:hover,
+.k-grid .k-table-row.k-hover {
+    background-color: var(--vsc-hover) !important;
+    box-shadow: inset 3px 0 0 var(--vsc-accent);
+}
+
+/* Selected */
+.k-grid tbody tr.k-selected,
+.k-grid .k-table-row.k-selected {
+    background-color: var(--vsc-selection) !important;
+    color: #fff !important;
+}
+
+.k-grid td,
+.k-grid th {
+    border-color: var(--vsc-border) !important;
+}
+
+/* ── Pager ─────────────────────────────────────────────── */
+.k-pager,
+.k-pager-wrap {
+    background-color: var(--vsc-titlebar) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-border) !important;
+    border-top: 1px solid var(--vsc-border) !important;
+}
+
+.k-pager .k-button,
+.k-pager-wrap .k-button {
+    color: var(--vsc-text) !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    border-radius: 3px !important;
+}
+
+.k-pager .k-button:hover,
+.k-pager-wrap .k-button:hover {
+    background-color: var(--vsc-hover) !important;
+}
+
+.k-pager .k-button.k-selected,
+.k-pager-wrap .k-button.k-selected {
+    background-color: var(--vsc-accent) !important;
+    color: #fff !important;
+}
+
+.k-pager-sizes .k-input,
+.k-pager-sizes select,
+.k-pager-sizes .k-dropdownlist,
+.k-pager-sizes .k-input-inner {
+    background-color: var(--vsc-input) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-input-border) !important;
+}
+
+/* ── Dropdowns / popups ────────────────────────────────── */
+.k-popup,
+.k-list-container,
+.k-list-ul {
+    background-color: var(--vsc-dropdown) !important;
+    border-color: var(--vsc-border) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+.k-list .k-list-item,
+.k-list .k-item {
+    color: var(--vsc-text) !important;
+    font-size: 12px;
+}
+
+.k-list .k-list-item:hover,
+.k-list .k-item:hover {
+    background-color: var(--vsc-hover) !important;
+}
+
+.k-list .k-list-item.k-selected,
+.k-list .k-item.k-selected {
+    background-color: var(--vsc-selection) !important;
+    color: #fff !important;
+}
+
+/* ── Sort indicator ────────────────────────────────────── */
+.k-sort-icon,
+.k-sort-order {
+    color: var(--vsc-accent) !important;
+}
+
+/* ── Custom status badges (VS Code token style) ────────── */
+.vsc-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 10px;
+    border-width: 1.5px;
+    border-style: solid;
+}
+
+.vsc-badge-completed {
+    color: #4ec994;
+    border-color: #4ec994;
+    background: rgba(78, 201, 148, .22);
+}
+
+.vsc-badge-processing {
+    color: #e8c93b;
+    border-color: #e8c93b;
+    background: rgba(232, 201, 59, .22);
+}
+
+.vsc-badge-submitted {
+    color: #9cdcfe;
+    border-color: #9cdcfe;
+    background: rgba(156, 220, 254, .22);
+}
+
+.vsc-badge-failed {
+    color: #f44747;
+    border-color: #f44747;
+    background: rgba(244, 71, 71, .22);
+}
+
+/* Light theme needs darker ink for the same contrast on a white/cream grid */
+[data-theme="light"] .vsc-badge-completed {
+    color: #1b5e3a;
+    border-color: #2ea36c;
+    background: rgba(46, 163, 108, .18);
+}
+
+[data-theme="light"] .vsc-badge-processing {
+    color: #7a5d00;
+    border-color: #d4b106;
+    background: rgba(212, 177, 6, .20);
+}
+
+[data-theme="light"] .vsc-badge-submitted {
+    color: #0b4a8f;
+    border-color: #4aa3f0;
+    background: rgba(74, 163, 240, .18);
+}
+
+[data-theme="light"] .vsc-badge-failed {
+    color: #8a1414;
+    border-color: #e05252;
+    background: rgba(224, 82, 82, .18);
+}
+
+.vsc-badge-unknown {
+    color: #858585;
+    border-color: #555;
+    background: transparent;
+}
+
+/* ── Scrollbars ────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--vsc-sidebar);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* ── Bootstrap overrides ───────────────────────────────── */
+.form-control,
+.form-select {
+    background-color: var(--vsc-input) !important;
+    color: var(--vsc-text) !important;
+    border-color: var(--vsc-input-border) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--vsc-accent) !important;
+    box-shadow: 0 0 0 1px var(--vsc-accent) !important;
+    background-color: var(--vsc-input) !important;
+    color: var(--vsc-text) !important;
+}
+
+.form-control::placeholder {
+    color: var(--vsc-text-dim) !important;
+}
+
+/* ── Checkbox styling ─────────────────────────────────── */
+input[type="checkbox"] {
+    accent-color: var(--vsc-accent);
+    /* Force the light native widget so the unchecked box stays visible against dark themes. */
+    color-scheme: light;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:hover {
+    filter: brightness(1.2);
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--vsc-accent);
+    border-color: var(--vsc-accent);
+}
+
+input[type="checkbox"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Grid header checkbox ─────────────────────────────── */
+.k-grid-header th input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    padding: 2px;
+    border: 1px solid var(--vsc-border);
+    border-radius: 3px;
+    background-color: #fff;
+}
+
+.k-grid-header th {
+    text-align: center;
+    padding-left: 8px;
+    padding-right: 8px;
+}

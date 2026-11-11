@@ -1,0 +1,234 @@
+<div class="assistant">
+  <div class="assistant__head">
+    <h2 class="assistant__title">Ask ECCO, the Dolphin 🐬</h2>
+    <div class="assistant__head-actions">
+      <button type="button" class="asst-icon-btn" ng-class="{ 'is-open': $ctrl.panel }" ng-click="$ctrl.panel ? $ctrl.closePanel() : $ctrl.openPanel()"
+              aria-haspopup="dialog" aria-expanded="{{ !!$ctrl.panel }}" aria-label="Tools{{ $ctrl.insights().length ? ' (' + $ctrl.insights().length + ' insights)' : '' }}"
+              title="Tools: insights, suggested questions, tips, saved views, usage and settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16M17 8h1M17 11h1"/></svg>
+        <span class="asst-icon-btn__dot" ng-if="$ctrl.insights().length" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="asst-icon-btn" title="New chat" aria-label="New chat" ng-click="$ctrl.newChat()" ng-disabled="$ctrl.loading">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" class="tabs__tab" ng-class="{ 'is-active': $ctrl.activeTab === 'ask' }" aria-selected="{{ $ctrl.activeTab === 'ask' }}" ng-click="$ctrl.activeTab = 'ask'">Ask</button>
+    <button type="button" role="tab" class="tabs__tab" ng-class="{ 'is-active': $ctrl.activeTab === 'conversation' }" aria-selected="{{ $ctrl.activeTab === 'conversation' }}" ng-click="$ctrl.activeTab = 'conversation'">
+      Conversation<span ng-if="$ctrl.history.length"> ({{ $ctrl.history.length }})</span>
+    </button>
+    <button type="button" role="tab" class="tabs__tab" ng-class="{ 'is-active': $ctrl.activeTab === 'history' }" aria-selected="{{ $ctrl.activeTab === 'history' }}" ng-click="$ctrl.activeTab = 'history'">
+      History<span ng-if="$ctrl.conversations.length"> ({{ $ctrl.conversations.length }})</span>
+    </button>
+  </div>
+
+  <!-- ═══ Ask tab: kept clear; status, insights and suggestions are in the Tools panel ═══ -->
+  <div class="assistant__scroll asst-empty" ng-if="$ctrl.activeTab === 'ask'">
+    <p class="asst-empty__text" ng-if="$ctrl.hasData()">Ask anything about the results in the grid.</p>
+    <p class="asst-empty__text" ng-if="!$ctrl.hasData()">Run a search, then ask about the results.</p>
+    <button type="button" class="link-btn asst-empty__link" ng-click="$ctrl.openPanel('samples')">Need ideas? See suggested questions</button>
+  </div>
+
+  <!-- ═══ Conversation tab ═══ -->
+  <div class="assistant__scroll" ng-if="$ctrl.activeTab === 'conversation'">
+    <div class="muted assistant__status" ng-if="!$ctrl.history.length">No questions asked yet — switch to the Ask tab to get started.</div>
+    <div class="turn" ng-repeat="h in $ctrl.history track by $index">
+      <div class="turn__q" ng-if="h.q">
+        <span><strong>Q:</strong> {{ h.q }}</span>
+        <button type="button" class="turn__star" ng-class="{ 'is-active': $ctrl.isFavorite(h.q) }"
+                title="{{ $ctrl.isFavorite(h.q) ? 'Remove from favorites' : 'Save to favorites' }}" ng-click="$ctrl.toggleFavorite(h.q)">★</button>
+      </div>
+      <div class="turn__flag" ng-if="h.isSearch">↳ Grid search triggered</div>
+      <div class="turn__flag turn__flag--muted" ng-if="h.isSearch && h.params">🔍 Understood as: {{ $ctrl.describeParams(h.params) }}</div>
+      <div class="turn__flag" ng-if="h.isExport">↳ Excel export triggered</div>
+      <div class="turn__flag" ng-if="h.isClear">↳ Filters cleared</div>
+      <div class="turn__flag" ng-if="h.isUndo">↳ Reverted to previous filters</div>
+      <div class="turn__flag" ng-if="h.isMulti">↳ Multiple actions performed</div>
+      <div class="turn__flag" ng-if="h.isSend && !h.sendError">✓ Draft opened for review</div>
+      <div class="turn__flag turn__flag--error" ng-if="h.isSend && h.sendError">✗ Couldn't prepare the request: {{ h.sendError }}</div>
+      <div class="turn__flag" ng-if="h.isUpdate && !h.sendError">✎ Draft updated</div>
+      <div class="turn__flag turn__flag--error" ng-if="h.isUpdate && h.sendError">✗ Update failed: {{ h.sendError }}</div>
+      <mini-chart ng-repeat="c in h.charts track by $index" chart="c"></mini-chart>
+      <div class="turn__a">
+        <strong>A:</strong>
+        <div class="turn__answer"><markdown-answer text="h.a"></markdown-answer></div>
+        <button type="button" class="turn__speak" ng-if="$ctrl.voiceOutputSupported" ng-class="{ 'is-speaking': $ctrl.speakingIndex === $index }"
+                title="{{ $ctrl.speakingIndex === $index ? 'Stop reading' : 'Read this answer aloud' }}" ng-click="$ctrl.speak($index, h.a)">{{ $ctrl.speakingIndex === $index ? '⏹' : '🔊' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ History tab ═══ -->
+  <div class="assistant__scroll" ng-if="$ctrl.activeTab === 'history'">
+    <div class="alert alert--warning small" ng-if="$ctrl.persistFailed">
+      ⚠️ Your last question/answer couldn't be saved to History (connection or server issue) — it's still visible in the Conversation tab this session, but won't be listed here after you leave. Later questions will keep trying to save normally.
+    </div>
+    <div class="muted assistant__status" ng-if="!$ctrl.conversations.length">No saved conversations yet.</div>
+    <div class="history-actions" ng-if="$ctrl.conversations.length">
+      <button type="button" class="btn btn--xs btn--ghost btn--danger-hover" ng-click="$ctrl.deleteSelectedConfirm = true"
+              ng-disabled="$ctrl.deletingSelected || !$ctrl.selectedCount()">🗑 {{ $ctrl.deletingSelected ? 'Deleting…' : 'Delete Selected (' + $ctrl.selectedCount() + ')' }}</button>
+      <button type="button" class="btn btn--xs btn--ghost btn--danger-hover" ng-click="$ctrl.deleteAllConfirm = true"
+              ng-disabled="$ctrl.deletingAll">🗑 {{ $ctrl.deletingAll ? 'Deleting…' : 'Delete All (' + $ctrl.conversations.length + ')' }}</button>
+    </div>
+    <div class="history-item" ng-repeat="c in $ctrl.conversations track by c.conversationId" ng-class="{ 'is-active': c.conversationId === $ctrl.activeConversationId }">
+      <input type="checkbox" aria-label="Select conversation" ng-model="$ctrl.selectedConversations[c.conversationId]">
+      <button type="button" class="history-item__open" ng-click="$ctrl.openConversation(c.conversationId)">{{ $ctrl.previewOf(c) }}</button>
+      <button type="button" class="history-item__delete" title="Delete this conversation" aria-label="Delete conversation" ng-click="$ctrl.askDelete(c.conversationId, $event)">🗑</button>
+    </div>
+  </div>
+
+  <!-- ═══ Composer ═══ -->
+  <div class="composer">
+    <textarea class="input composer__input" rows="3" ng-model="$ctrl.text" ng-keydown="$ctrl.onKeydown($event)" ng-disabled="$ctrl.loading"
+              aria-label="Ask the assistant" title="Enter to send, Shift+Enter for a new line" placeholder="{{ $ctrl.listening ? 'Listening…' : 'Ask about these results…' }}"></textarea>
+    <button type="button" class="composer__mic" ng-if="$ctrl.voiceSupported" ng-class="{ 'is-listening': $ctrl.listening }" ng-disabled="$ctrl.loading"
+            title="{{ $ctrl.listening ? 'Stop listening' : 'Speak your query' }}" aria-label="{{ $ctrl.listening ? 'Stop voice input' : 'Start voice input' }}"
+            ng-click="$ctrl.toggleListening()">
+      <svg ng-if="!$ctrl.listening" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="#fff" stroke="none"></path>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line>
+      </svg>
+      <svg ng-if="$ctrl.listening" width="12" height="12" viewBox="0 0 24 24" fill="#fff"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+    </button>
+  </div>
+  <div class="composer__actions">
+    <button type="button" class="btn btn--sm btn--primary" ng-click="$ctrl.send()" ng-disabled="$ctrl.loading || !$ctrl.text">
+      <span class="spinner spinner--sm" ng-if="$ctrl.loading"></span><span ng-if="!$ctrl.loading">Send</span>
+    </button>
+    <button type="button" class="btn btn--sm btn--outline" ng-click="$ctrl.clearInput()" ng-disabled="$ctrl.loading">Clear</button>
+    <button type="button" class="btn btn--sm btn--outline-warning" title="Save this query to favorites"
+            ng-click="$ctrl.text.trim() && !$ctrl.isFavorite($ctrl.text.trim()) && $ctrl.toggleFavorite($ctrl.text.trim())" ng-disabled="$ctrl.loading || !$ctrl.text.trim()">⭐ Save</button>
+    <span class="composer__hint"><kbd class="kbd">Enter</kbd> send · <kbd class="kbd">Shift</kbd>+<kbd class="kbd">Enter</kbd> new line</span>
+  </div>
+
+  <!-- ═══ Tools panel ═══ -->
+  <div class="asst-drawer-backdrop" ng-if="$ctrl.panel" ng-click="$ctrl.closePanel()"></div>
+  <aside class="asst-drawer" ng-if="$ctrl.panel" role="dialog" aria-label="Assistant tools" ng-keydown="$event.key === 'Escape' && $ctrl.closePanel()">
+    <div class="asst-drawer__head">
+      <span class="asst-drawer__heading">
+        <span class="asst-drawer__title">Tools</span>
+        <span class="asst-drawer__status text-ok" ng-if="$ctrl.hasData() && $ctrl.allLoaded()">✓ All {{ $ctrl.loadedTotal() | number }} records loaded for analysis</span>
+        <span class="asst-drawer__status text-warn" ng-if="$ctrl.hasData() && !$ctrl.allLoaded()"><span class="spinner spinner--xs"></span> Loading the full dataset…</span>
+        <span class="asst-drawer__status muted" ng-if="!$ctrl.hasData()">No data yet. Run a search first.</span>
+      </span>
+      <button type="button" class="aw-btn aw-btn--icon" title="Close (Esc)" aria-label="Close tools" ng-click="$ctrl.closePanel()">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <nav class="asst-drawer__nav" role="tablist" aria-label="Tools">
+      <button type="button" role="tab" class="asst-drawer__tab" ng-repeat="s in $ctrl.panelSections() track by s.id" ng-class="{ 'is-active': $ctrl.panel === s.id }"
+              aria-selected="{{ $ctrl.panel === s.id }}" ng-click="$ctrl.openPanel(s.id)">
+        <span aria-hidden="true">{{ s.icon }}</span> {{ s.label }}<span class="asst-drawer__count" ng-if="s.count">{{ s.count }}</span>
+      </button>
+    </nav>
+    <div class="asst-drawer__body" ng-switch="$ctrl.panel">
+      <section ng-switch-when="insights">
+        <div class="faint small" ng-if="!$ctrl.insights().length">No insights yet. Run a search and they appear here.</div>
+        <div class="card-tile__line asst-drawer__line" ng-repeat="line in $ctrl.insights() track by $index">{{ line }}</div>
+      </section>
+      <section ng-switch-when="tips">
+        <div class="card-tile__line">{{ $ctrl.tip }}</div>
+        <button type="button" class="link-btn link-btn--muted" ng-click="$ctrl.showAllTips = !$ctrl.showAllTips">{{ $ctrl.showAllTips ? 'Hide all tips' : 'See all tips (' + $ctrl.tips.length + ')' }}</button>
+        <div class="card-tile__divided" ng-if="$ctrl.showAllTips">
+          <div class="card-tile__line" ng-repeat="tip in $ctrl.tips track by $index">{{ tip }}</div>
+        </div>
+      </section>
+      <section ng-switch-when="samples">
+        <div class="asst-start__list">
+          <button type="button" class="asst-suggest" ng-repeat="q in $ctrl.sampleQueries track by q" ng-disabled="$ctrl.loading" ng-click="$ctrl.runSample(q); $ctrl.closePanel()">{{ q }}</button>
+        </div>
+      </section>
+      <section ng-switch-when="views">
+        <button type="button" class="btn btn--xs btn--outline" ng-if="$ctrl.hasActiveParams()" title="Save the grid's current filters as a named view" ng-click="$ctrl.promptSaveView()">+ Save current filters</button>
+        <div class="chip-row asst-drawer__gap" ng-if="$ctrl.savedViews.length">
+          <button type="button" class="chip" ng-repeat="v in $ctrl.savedViews track by v.name" ng-disabled="$ctrl.loading"
+                  title="{{ $ctrl.describeParams(v.params) }} — shift-click to remove" ng-click="$ctrl.clickSavedView(v, $event)">📌 {{ v.name }}</button>
+        </div>
+        <div class="faint small asst-drawer__gap" ng-if="!$ctrl.savedViews.length">No saved views yet. Filter the grid, then save the filters here to reuse them without an AI call.</div>
+      </section>
+      <section ng-switch-when="favorites">
+        <div class="faint small" ng-if="!$ctrl.favorites.length">No favorites yet. Star a question in the Conversation tab, or type one and press ⭐ Save.</div>
+        <div class="chip-row">
+          <span class="chip chip--fav" ng-repeat="q in $ctrl.favorites track by q">
+            <button type="button" class="chip__main" title="Click to run" ng-disabled="$ctrl.loading" ng-click="$ctrl.runSample(q); $ctrl.closePanel()">{{ q }}</button>
+            <button type="button" class="chip__remove" title="Remove from favorites" aria-label="Remove from favorites" ng-click="$ctrl.toggleFavorite(q)">×</button>
+          </span>
+        </div>
+      </section>
+      <section ng-switch-when="usage">
+        <div class="token-row">
+          <span class="muted small">
+            Last call: {{ $ctrl.lastCallUsage ? ($ctrl.lastCallUsage.inputTokens | ccTokens) + ' in / ' + ($ctrl.lastCallUsage.outputTokens | ccTokens) + ' out' : '—' }}
+            · all-time: {{ $ctrl.totalTokens() | ccTokens }} across {{ $ctrl.tokenTotals.calls | ccPlural:'call' }}
+          </span>
+          <span>
+            <button type="button" class="link-btn" ng-click="$ctrl.showTokenDetail = !$ctrl.showTokenDetail">{{ $ctrl.showTokenDetail ? 'Hide tips' : 'How to reduce' }}</button>
+            <button type="button" class="link-btn link-btn--muted" title="Reset the all-time counter stored in this browser" ng-click="$ctrl.resetTokens()">Reset</button>
+          </span>
+        </div>
+        <div class="small text-ok" ng-if="$ctrl.orgUsage && ($ctrl.orgUsage.claudeCalls > 0 || $ctrl.orgUsage.routerHits > 0)">
+          🌐 Org-wide (all users, since tracking began): {{ $ctrl.orgUsage.inputTokens + $ctrl.orgUsage.outputTokens | ccTokens }} tokens
+          across {{ $ctrl.orgUsage.claudeCalls | ccPlural:'AI call' }}<span ng-if="$ctrl.orgUsage.routerHits > 0"> + {{ $ctrl.orgUsage.routerHits | ccPlural:'free router hit' }}</span>
+        </div>
+        <ul class="token-tips" ng-if="$ctrl.showTokenDetail">
+          <li>The full system prompt + your loaded data breakdown is resent on <em>every</em> message — the biggest lever is asking fewer, more specific questions rather than iterating broadly.</li>
+          <li>Start "+ New chat" when you're done with a topic — conversation history compounds input tokens on every turn it's kept.</li>
+          <li>Narrow your search (add filters) before asking a question — a smaller loaded dataset means a smaller breakdown sent to the model.</li>
+          <li>Breakdowns are already capped to the top 12 values per field, and old answers are trimmed to ~300 characters once they scroll out of recent context.</li>
+        </ul>
+        <div ng-if="$ctrl.savedViewUses === 0 && $ctrl.savedViews.length" class="card-tile__divided muted small">
+          📌 You have Saved Views but haven't reused one yet — each click skips an AI call entirely
+          (~{{ $ctrl.savings().avgPerCall | ccTokens }} tokens saved per reuse, based on {{ $ctrl.savings().measured ? 'your average call so far' : 'a typical call' }}).
+        </div>
+        <div class="card-tile__divided" ng-if="$ctrl.savedViewUses > 0">
+          <div class="small text-ok strong">📌 Saved Views impact</div>
+          <div class="small">
+            {{ $ctrl.savedViewUses | ccPlural:'reuse' }} × ~{{ $ctrl.savings().avgPerCall | ccTokens }} tokens/call skipped =
+            <strong class="text-ok">~{{ $ctrl.savings().saved | ccTokens }} tokens saved</strong>
+          </div>
+          <div class="compare-bar">
+            <span class="compare-bar__label">Without Saved Views</span>
+            <div class="compare-bar__track"><div class="compare-bar__fill compare-bar__fill--warn" style="width: 100%"></div></div>
+            <span class="compare-bar__value">{{ $ctrl.savings().without | ccTokens }}</span>
+          </div>
+          <div class="compare-bar">
+            <span class="compare-bar__label">With Saved Views (actual)</span>
+            <div class="compare-bar__track"><div class="compare-bar__fill compare-bar__fill--ok" ng-style="{ width: $ctrl.savings().actualPct + '%' }"></div></div>
+            <span class="compare-bar__value">{{ $ctrl.savings().actual | ccTokens }}</span>
+          </div>
+        </div>
+      </section>
+      <section ng-switch-when="settings">
+        <div class="chip-row">
+          <span class="muted small" title="Fires only while this browser tab stays open — not a true scheduled email digest.">🔔 Remind me:</span>
+          <button type="button" class="chip" ng-repeat="opt in $ctrl.reminders track by opt.label" ng-click="$ctrl.scheduleReminder(opt)">{{ opt.label }}</button>
+        </div>
+        <div class="chip-row card-tile__divided" ng-if="$ctrl.voiceOutputSupported">
+          <span class="muted small">🎙️ Read-aloud voice:</span>
+          <button type="button" class="chip" ng-class="{ 'is-active': $ctrl.voiceGender === 'male' }" ng-click="$ctrl.setVoice('male')">Male</button>
+          <button type="button" class="chip" ng-class="{ 'is-active': $ctrl.voiceGender === 'female' }" ng-click="$ctrl.setVoice('female')">Female</button>
+          <span class="faint small" title="Browsers don't allow web pages to record and clone a person's own voice for text-to-speech — that needs a cloud voice-cloning service wired into the backend.">(no "my voice" option — browser limitation ⓘ)</span>
+        </div>
+        <div class="card-tile__divided small">
+          🎨 Font, text size and colours are now in
+          <button type="button" class="link-btn" ng-click="$ctrl.openPreferences()">Preferences</button>, and apply to every screen.
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <smart-error-alert error="$ctrl.error" is-retrying="$ctrl.isRetrying" on-retry="$ctrl.retry()" on-dismiss="$ctrl.error = null"></smart-error-alert>
+
+  <confirm-dialog show="!!$ctrl.deleteConfirmId" title="Delete Conversation" danger="true" confirm-label="Delete"
+                  message="'Delete this saved conversation? This cannot be undone.'"
+                  on-confirm="$ctrl.confirmDelete()" on-cancel="$ctrl.deleteConfirmId = null"></confirm-dialog>
+  <confirm-dialog show="$ctrl.deleteAllConfirm" title="Delete All Conversations" danger="true" confirm-label="Delete All"
+                  message="'Delete all ' + ($ctrl.conversations.length | ccPlural:'saved conversation') + '? This cannot be undone.'"
+                  on-confirm="$ctrl.confirmDeleteAll()" on-cancel="$ctrl.deleteAllConfirm = false"></confirm-dialog>
+  <confirm-dialog show="$ctrl.deleteSelectedConfirm" title="Delete Selected Conversations" danger="true" confirm-label="Delete Selected"
+                  message="'Delete ' + ($ctrl.selectedCount() | ccPlural:'selected conversation') + '? This cannot be undone.'"
+                  on-confirm="$ctrl.confirmDeleteSelected()" on-cancel="$ctrl.deleteSelectedConfirm = false"></confirm-dialog>
+  <prompt-dialog show="$ctrl.showSaveViewPrompt" title="Save View" message="Name this view:" default-value="$ctrl.saveViewDefault()"
+                 confirm-label="Save" on-submit="$ctrl.confirmSaveView(value)" on-cancel="$ctrl.showSaveViewPrompt = false"></prompt-dialog>
+</div>

@@ -1,0 +1,31 @@
+<div class="dialog-backdrop dialog-backdrop--top" ng-if="$ctrl.show">
+  <div class="dialog dialog--lg dialog--code" role="dialog" aria-modal="true" aria-labelledby="payload-title">
+    <div class="dialog__header">
+      <span id="payload-title">Request Payload</span>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.onClose()">×</button>
+    </div>
+    <div class="dialog__body">
+      <div class="alert alert--warning" role="status" ng-if="$ctrl.isEncrypted">
+        <strong>🔒 This payload is still encrypted.</strong>
+        The API couldn't decrypt it, usually because it was encrypted with a different environment's PGP key.
+        The raw ciphertext is shown below.
+      </div>
+      <div class="btn-group" ng-if="!$ctrl.isEncrypted">
+        <button type="button" class="btn btn--sm" ng-class="$ctrl.mode === 'json' ? 'btn--primary' : 'btn--outline'" ng-click="$ctrl.mode = 'json'">JSON Format</button>
+        <button type="button" class="btn btn--sm" ng-class="$ctrl.mode === 'text' ? 'btn--primary' : 'btn--outline'" ng-click="$ctrl.mode = 'text'">Text Format</button>
+      </div>
+      <div class="payload-view">
+        <pre ng-if="$ctrl.mode === 'json' || $ctrl.isEncrypted" class="code-block" ng-class="{ 'code-block--json': $ctrl.isValidJson, 'code-block--invalid': !$ctrl.isValidJson && !$ctrl.isEncrypted }">{{ $ctrl.formatted || '—' }}</pre>
+        <table ng-if="$ctrl.mode === 'text' && $ctrl.rows" class="kv-table">
+          <thead><tr><th>Key</th><th>Value</th></tr></thead>
+          <tbody><tr ng-repeat="row in $ctrl.rows track by $index"><td class="kv-table__key">{{ row.key }}</td><td>{{ row.value }}</td></tr></tbody>
+        </table>
+        <pre ng-if="$ctrl.mode === 'text' && !$ctrl.rows" class="code-block pre-wrap">{{ $ctrl.payload || '—' }}</pre>
+      </div>
+    </div>
+    <div class="dialog__footer">
+      <button type="button" class="btn btn--secondary" ng-click="$ctrl.onClose()">Close</button>
+      <button type="button" class="btn btn--outline-primary" ng-click="$ctrl.copy()">Copy to Clipboard</button>
+    </div>
+  </div>
+</div>

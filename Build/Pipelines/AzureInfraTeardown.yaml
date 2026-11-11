@@ -1,0 +1,51 @@
+trigger: none
+
+pool: Atlashostedagents
+
+parameters:
+  - name: Environment
+    displayName: "Environment to teardown"
+    type: string
+    default: DVLP
+    values:
+      - DVLP
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscription to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - name: RG_ENVCODE
+      value: D03
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: RG_ENVCODE
+      value: M01
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: RG_ENVCODE
+      value: P01
+  - name: RG_APP_NAME
+    value: 'RG-CMFG-$(RG_ENVCODE)-ECCO'
+  - name: KV_NAME
+    value: 'kv-$(RG_ENVCODE)-ECCO'
+
+stages:
+  - stage: Teardown
+    displayName: 'Teardown Azure Resources'
+    jobs:
+      - job: DeleteResourceGroup
+        displayName: 'Delete Resource Group and All Resources'
+        steps:
+          - task: AzurePowerShell@5
+            displayName: 'Delete Resource Group $(RG_APP_NAME)'
+            inputs:
+              azureSubscription: '${{ parameters.Subscription }}'
+              ScriptType: 'InlineScript'
+              Inline: |
+                Remove-AzResourceGroup -Name "$(RG_APP_NAME)" -Force -ErrorAction Stop
+              azurePowerShellVersion: LatestVersion

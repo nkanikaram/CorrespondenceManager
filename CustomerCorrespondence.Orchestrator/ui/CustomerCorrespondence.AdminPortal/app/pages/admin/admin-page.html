@@ -1,0 +1,671 @@
+<div class="admin">
+  <div class="admin__head">
+    <div>
+      <h1 class="admin__title">Administration</h1>
+      <p class="admin__lead">Who can sign in and what they can do, deleted records, customer letters and alerts.</p>
+    </div>
+  </div>
+
+  <div class="tabs admin__tabs" role="tablist">
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.can('admin.users.manage')" ng-class="{ 'is-active': $ctrl.tab === 'users' }"
+            aria-selected="{{ $ctrl.tab === 'users' }}" ng-click="$ctrl.setTab('users')">Users <span class="tabs__count">{{ $ctrl.users.length }}</span></button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.can('admin.users.manage')" ng-class="{ 'is-active': $ctrl.tab === 'roles' }"
+            aria-selected="{{ $ctrl.tab === 'roles' }}" ng-click="$ctrl.setTab('roles')">Roles &amp; permissions</button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.can('admin.users.manage')" ng-class="{ 'is-active': $ctrl.tab === 'policies' }"
+            aria-selected="{{ $ctrl.tab === 'policies' }}" ng-click="$ctrl.setTab('policies')">Access policies</button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.canTab('sso')" ng-class="{ 'is-active': $ctrl.tab === 'sso' }"
+            aria-selected="{{ $ctrl.tab === 'sso' }}" ng-click="$ctrl.setTab('sso')">Microsoft sign-in</button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.canTab('recycle')" ng-class="{ 'is-active': $ctrl.tab === 'recycle' }"
+            aria-selected="{{ $ctrl.tab === 'recycle' }}" ng-click="$ctrl.setTab('recycle')">Recycle bin</button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.canTab('letters')" ng-class="{ 'is-active': $ctrl.tab === 'letters' }"
+            aria-selected="{{ $ctrl.tab === 'letters' }}" ng-click="$ctrl.setTab('letters')">Letter templates</button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.canTab('alerts')" ng-class="{ 'is-active': $ctrl.tab === 'alerts' }"
+            aria-selected="{{ $ctrl.tab === 'alerts' }}" ng-click="$ctrl.setTab('alerts')">Alerts</button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.canTab('sla')" ng-class="{ 'is-active': $ctrl.tab === 'sla' }"
+            aria-selected="{{ $ctrl.tab === 'sla' }}" ng-click="$ctrl.setTab('sla')">SLA</button>
+    <button type="button" class="tabs__tab" role="tab" ng-if="$ctrl.can('admin.audit.read')" ng-class="{ 'is-active': $ctrl.tab === 'audit' }"
+            aria-selected="{{ $ctrl.tab === 'audit' }}" ng-click="$ctrl.setTab('audit')">Audit log</button>
+  </div>
+
+  <div class="admin__body">
+    <div class="notice notice--success" role="status" ng-if="$ctrl.flash">
+      <span>{{ $ctrl.flash }}</span>
+      <button type="button" class="notice__close" aria-label="Dismiss" ng-click="$ctrl.flash = null">×</button>
+    </div>
+    <div class="notice notice--info" ng-if="$ctrl.createdPassword">
+      <span>Temporary password for <strong>{{ $ctrl.createdPassword.userName }}</strong>:
+        <code class="secret">{{ $ctrl.createdPassword.password }}</code></span>
+      <span class="notice__actions">
+        <button type="button" class="btn btn--sm btn--outline" ng-click="$ctrl.copy($ctrl.createdPassword.password)">Copy</button>
+        <button type="button" class="notice__close" aria-label="Dismiss" ng-click="$ctrl.createdPassword = null">×</button>
+      </span>
+    </div>
+    <div class="notice notice--danger" role="alert" ng-if="$ctrl.loadError">{{ $ctrl.loadError }}</div>
+    <div class="empty-state" ng-if="$ctrl.loading && ['users', 'roles', 'policies'].indexOf($ctrl.tab) !== -1"><span class="spinner"></span> Loading…</div>
+
+    <!-- ═════════ Users ═════════ -->
+    <section ng-if="$ctrl.tab === 'users' && !$ctrl.loading && $ctrl.users">
+      <div class="admin__toolbar">
+        <input type="search" class="input admin__search" placeholder="Find a user, email or role…" aria-label="Find a user" ng-model="$ctrl.userFilter">
+        <button type="button" class="btn btn--primary" ng-click="$ctrl.openEditor()">+ Add user</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th scope="col">User</th>
+              <th scope="col">Roles</th>
+              <th scope="col">Customers</th>
+              <th scope="col">Delivery</th>
+              <th scope="col">PII</th>
+              <th scope="col">Export limit</th>
+              <th scope="col">Status</th>
+              <th scope="col">Last sign-in</th>
+              <th scope="col"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="u in $ctrl.visibleUsers() track by u.userId" ng-class="{ 'is-inactive': !u.isActive }">
+              <td>
+                <div class="cell-strong">{{ u.displayName }} <span class="you-pill" ng-if="$ctrl.isSelf(u)">You</span>
+                  <span class="sso-pill" ng-if="$ctrl.isSso(u)" title="Signs in with Microsoft (Entra ID); roles can also come from their groups">Microsoft</span></div>
+                <div class="cell-dim">{{ u.userName }}<span ng-if="u.email"> · {{ u.email }}</span></div>
+              </td>
+              <td><span class="role-pill" ng-repeat="r in u.roles track by r" ng-class="{ 'role-pill--group': $ctrl.groupRoles(u).indexOf(r) !== -1 }"
+                        title="{{ $ctrl.groupRoles(u).indexOf(r) !== -1 ? 'From an Entra group' : 'Assigned here' }}">{{ r }}</span><span class="cell-dim" ng-if="!u.roles.length">No role</span></td>
+              <td title="{{ $ctrl.scopeTitle(u, 'scope.customer') }}">{{ $ctrl.scopeText(u, 'scope.customer') }}</td>
+              <td title="{{ $ctrl.scopeTitle(u, 'scope.deliveryMethod') }}">{{ $ctrl.scopeText(u, 'scope.deliveryMethod') }}</td>
+              <td>{{ $ctrl.hasPii(u) ? 'Yes' : 'No' }}</td>
+              <td>{{ $ctrl.exportLimit(u) ? ($ctrl.exportLimit(u) | number) + ' rows' : 'None' }}</td>
+              <td><span class="state-pill" ng-class="'state-pill--' + $ctrl.status(u).css">{{ $ctrl.status(u).text }}</span></td>
+              <td class="nowrap">{{ u.lastLoginUtc ? (u.lastLoginUtc | date:'MM/dd/yyyy HH:mm') : 'Never' }}</td>
+              <!-- Icon actions in fixed slots: an action a row can't have keeps its space empty, so the icons line up. -->
+              <td class="data-table__actions user-actions">
+                <button type="button" class="icon-btn icon-btn--warn" ng-if="u.isLockedOut" ng-click="$ctrl.unlock(u)" title="Unlock" aria-label="Unlock {{ u.userName }}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg></button>
+                <button type="button" class="icon-btn icon-btn--accent" ng-click="$ctrl.openEditor(u)" title="Edit" aria-label="Edit {{ u.userName }}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+                <button type="button" class="icon-btn icon-btn--accent" ng-if="!$ctrl.isSso(u)" ng-click="$ctrl.openReset(u)" title="Reset password" aria-label="Reset password for {{ u.userName }}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3M17 6l3 3M15 8l2 2"/></svg></button>
+                <span class="icon-btn action-slot" ng-if="$ctrl.isSso(u)" title="Signs in with Microsoft: no portal password" aria-hidden="true"></span>
+                <button type="button" class="icon-btn icon-btn--danger" ng-if="!$ctrl.isSelf(u)" ng-click="$ctrl.askDelete(u)" title="Delete" aria-label="Delete {{ u.userName }}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>
+                <span class="icon-btn action-slot" ng-if="$ctrl.isSelf(u)" aria-hidden="true"></span>
+              </td>
+            </tr>
+            <tr ng-if="!$ctrl.visibleUsers().length"><td colspan="9" class="grid__state">No users match "{{ $ctrl.userFilter }}".</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═════════ Roles × permissions ═════════ -->
+    <section ng-if="$ctrl.tab === 'roles' && !$ctrl.loading && $ctrl.roles">
+      <p class="admin__hint">A user gets every permission granted by any of their roles. Attribute rules on the <em>Access policies</em> tab can still deny an action a role allows.</p>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.rolesError">{{ $ctrl.rolesError }}</div>
+      <div class="table-wrap">
+        <table class="data-table matrix">
+          <thead>
+            <tr>
+              <th scope="col">Permission</th>
+              <th scope="col" class="matrix__role" ng-repeat="r in $ctrl.roles track by r.roleId" title="{{ r.description }}">
+                {{ r.roleName }}<span class="matrix__count">{{ r.userCount }} user{{ r.userCount === 1 ? '' : 's' }}</span>
+                <span class="matrix__dirty" ng-if="$ctrl.roleDirty(r)">Unsaved</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody ng-repeat="g in $ctrl.permissionGroups track by g.category">
+            <tr class="matrix__group"><th scope="rowgroup" colspan="{{ $ctrl.roles.length + 1 }}">{{ g.category }}</th></tr>
+            <tr ng-repeat="p in g.permissions track by p.permissionKey">
+              <th scope="row" class="matrix__perm">
+                <div class="cell-strong">{{ p.description }}</div>
+                <code class="cell-dim">{{ p.permissionKey }}</code>
+              </th>
+              <td class="matrix__cell" ng-repeat="r in $ctrl.roles track by r.roleId">
+                <input type="checkbox" ng-model="$ctrl.matrix[r.roleId][p.permissionKey]" ng-disabled="$ctrl.isLockedCell(r, p)"
+                       aria-label="{{ r.roleName }}: {{ p.description }}"
+                       title="{{ $ctrl.isLockedCell(r, p) ? 'Administrators always keep this permission' : '' }}">
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin__actions">
+        <button type="button" class="btn btn--secondary" ng-disabled="!$ctrl.anyRoleDirty() || $ctrl.rolesSaving" ng-click="$ctrl.discardRoles()">Discard changes</button>
+        <button type="button" class="btn btn--primary" ng-disabled="!$ctrl.anyRoleDirty() || $ctrl.rolesSaving" ng-click="$ctrl.saveRoles()">
+          <span class="spinner spinner--sm" ng-if="$ctrl.rolesSaving"></span> Save changes
+        </button>
+      </div>
+    </section>
+
+    <!-- ═════════ Access policies (ABAC) ═════════ -->
+    <section ng-if="$ctrl.tab === 'policies' && !$ctrl.loading && $ctrl.policies">
+      <p class="admin__hint">
+        After a role grants a permission, each active policy for that permission is checked against the user's attributes,
+        the record and the time. If its condition matches, the action is denied with the policy's message.
+      </p>
+      <div class="policy" ng-repeat="p in $ctrl.policies track by p.policyId" ng-class="{ 'is-off': !p.isActive }">
+        <div class="policy__head">
+          <div>
+            <div class="policy__name">{{ p.policyName }}</div>
+            <div class="policy__meta"><code>{{ p.permissionKey }}</code> · priority {{ p.priority }}</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" ng-checked="p.isActive" ng-disabled="p.saving" ng-click="$ctrl.togglePolicy(p)" aria-label="{{ p.policyName }} active">
+            <span class="switch__track" aria-hidden="true"></span>
+            <span class="switch__label">{{ p.isActive ? 'On' : 'Off' }}</span>
+          </label>
+        </div>
+        <p class="policy__desc">{{ p.description }}</p>
+        <div class="policy__rule" ng-if="!p.edit">
+          <span class="policy__deny">Deny when</span> {{ p.summary }}
+          <div class="policy__message">Message: “{{ p.denyMessage }}”</div>
+        </div>
+        <div class="policy__edit" ng-if="p.edit">
+          <label class="field-label" for="policy-cond-{{ p.policyId }}">Condition (JSON)</label>
+          <textarea id="policy-cond-{{ p.policyId }}" class="input input--code" rows="7" ng-model="p.edit.conditionJson" spellcheck="false"></textarea>
+          <label class="field-label" for="policy-msg-{{ p.policyId }}">Message shown when denied</label>
+          <input id="policy-msg-{{ p.policyId }}" class="input" maxlength="400" ng-model="p.edit.denyMessage">
+          <div class="notice notice--danger" role="alert" ng-if="p.error">{{ p.error }}</div>
+        </div>
+        <div class="policy__actions">
+          <button type="button" class="link-btn" ng-if="!p.edit" ng-click="$ctrl.editPolicy(p)">Edit rule</button>
+          <button type="button" class="btn btn--sm btn--secondary" ng-if="p.edit" ng-click="$ctrl.cancelPolicy(p)">Cancel</button>
+          <button type="button" class="btn btn--sm btn--primary" ng-if="p.edit" ng-disabled="p.saving" ng-click="$ctrl.savePolicy(p)">Save rule</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ Microsoft sign-in ═════════ -->
+    <section ng-if="$ctrl.tab === 'sso'">
+      <p class="admin__hint">
+        People who sign in with their Microsoft work account get the roles and data access mapped to their Entra ID groups or app roles below,
+        on top of anything assigned on the Users tab. Group grants are refreshed at every sign-in, so removing someone from a group removes the access.
+        Use the group's <strong>object id</strong> (or the app role's value).
+      </p>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.sso.error">{{ $ctrl.sso.error }}</div>
+      <form class="mapping-form" name="mapForm" ng-submit="mapForm.$valid && $ctrl.addMapping()" novalidate>
+        <select class="input input--inline" ng-model="$ctrl.sso.form.claimType" aria-label="Claim type">
+          <option value="group">Group</option><option value="role">App role</option>
+        </select>
+        <input class="input" required ng-model="$ctrl.sso.form.claimValue" aria-label="Group object id or app role value"
+               placeholder="{{ $ctrl.sso.form.claimType === 'group' ? 'Group object id (GUID)' : 'App role value, e.g. Portal.Operator' }}">
+        <input class="input" ng-model="$ctrl.sso.form.displayName" placeholder="Name (e.g. CC Operators)" aria-label="Display name">
+        <span class="mapping-form__arrow" aria-hidden="true">→</span>
+        <select class="input input--inline" ng-model="$ctrl.sso.form.grant" aria-label="Grant">
+          <option value="role">Role</option><option value="attribute">Data access</option>
+        </select>
+        <select class="input input--inline" ng-if="$ctrl.sso.form.grant === 'role'" required ng-model="$ctrl.sso.form.roleName"
+                ng-options="r.roleName as r.roleName for r in $ctrl.roles" aria-label="Role"><option value="">Choose a role</option></select>
+        <select class="input input--inline" ng-if="$ctrl.sso.form.grant === 'attribute'" required ng-model="$ctrl.sso.form.attributeKey"
+                ng-options="a.attributeKey as a.attributeKey for a in $ctrl.attributeDefs" aria-label="Attribute"><option value="">Attribute</option></select>
+        <input class="input" ng-if="$ctrl.sso.form.grant === 'attribute'" required ng-model="$ctrl.sso.form.attributeValue" placeholder="Value (* = all)" aria-label="Attribute value">
+        <button type="submit" class="btn btn--primary" ng-disabled="mapForm.$invalid || $ctrl.sso.saving">Add mapping</button>
+      </form>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th scope="col">Entra ID</th><th scope="col">Grants</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            <tr ng-repeat="m in $ctrl.sso.mappings track by m.mappingId">
+              <td>
+                <div class="cell-strong">{{ m.displayName || m.claimValue }}</div>
+                <div class="cell-dim">{{ m.claimType === 'role' ? 'App role' : 'Group' }} · <span class="mono">{{ m.claimValue }}</span></div>
+              </td>
+              <td>{{ $ctrl.mappingGrant(m) }}</td>
+              <td class="data-table__actions"><button type="button" class="link-btn link-btn--danger" ng-click="$ctrl.removeMapping(m)">Remove</button></td>
+            </tr>
+            <tr ng-if="!$ctrl.sso.mappings.length && !$ctrl.sso.loading"><td colspan="3" class="grid__state">No mappings yet — Microsoft users get only what you assign on the Users tab.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═════════ Recycle bin ═════════ -->
+    <section ng-if="$ctrl.tab === 'recycle'">
+      <p class="admin__hint">Deleted records stay here, with their status history and PDF, for {{ $ctrl.recycle.retentionDays || 30 }} days. Then the retention job removes them for good.</p>
+      <form class="admin__toolbar" ng-submit="$ctrl.loadRecycle()">
+        <input type="search" class="input admin__search" placeholder="Doc Id, claim number or id" aria-label="Search the recycle bin" ng-model="$ctrl.recycle.search">
+        <button type="submit" class="btn btn--outline" ng-disabled="$ctrl.recycle.loading"><span class="spinner spinner--sm" ng-if="$ctrl.recycle.loading"></span> Search</button>
+        <button type="button" class="btn btn--primary" ng-if="$ctrl.selectedIds().length" ng-disabled="$ctrl.recycle.restoring" ng-click="$ctrl.restoreSelected()">
+          <span class="spinner spinner--sm" ng-if="$ctrl.recycle.restoring"></span> Restore selected ({{ $ctrl.selectedIds().length }})
+        </button>
+      </form>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.recycle.error">{{ $ctrl.recycle.error }}</div>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.recycle.failures.length">
+        <span>{{ $ctrl.recycle.failures.length }} record{{ $ctrl.recycle.failures.length === 1 ? ' was' : 's were' }} not restored and stay{{ $ctrl.recycle.failures.length === 1 ? 's' : '' }} in the recycle bin:
+          <ul><li ng-repeat="f in $ctrl.recycle.failures track by $index">{{ f }}</li></ul></span>
+        <button type="button" class="notice__close" aria-label="Dismiss" ng-click="$ctrl.recycle.failures = null">×</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th scope="col" class="data-table__check"><input type="checkbox" aria-label="Select all records in the recycle bin"
+                  ng-checked="$ctrl.allSelected()" ng-click="$ctrl.toggleAll()" ng-disabled="!$ctrl.recycle.items.length"></th><th scope="col">Record</th><th scope="col">Customer</th><th scope="col">Status</th><th scope="col">Deleted</th><th scope="col">Removed for good</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            <tr ng-repeat="i in $ctrl.recycle.items track by i.correspondenceId" ng-class="{ 'is-selected': $ctrl.recycle.selected[i.correspondenceId] }">
+              <td class="data-table__check"><input type="checkbox" aria-label="Select {{ i.docId || i.correspondenceId }}" ng-model="$ctrl.recycle.selected[i.correspondenceId]"></td>
+              <td>
+                <div class="cell-strong">{{ i.docId || '—' }}<span class="cell-dim" ng-if="i.claimNumber"> · claim {{ i.claimNumber }}</span></div>
+                <div class="cell-dim mono">{{ i.correspondenceId }}</div>
+              </td>
+              <td>{{ i.requestingDomainName }}<div class="cell-dim">{{ i.deliveryMethodCode }}</div></td>
+              <td>{{ i.latestStatus || '—' }}<span class="cell-dim" ng-if="i.hasPdf"> · PDF</span></td>
+              <td class="nowrap">{{ i.deletedUtc | date:'MM/dd/yyyy HH:mm' }}<div class="cell-dim">by {{ i.deletedByUserName || 'system' }}<span ng-if="i.deleteReason"> · {{ i.deleteReason }}</span></div></td>
+              <td class="nowrap">in {{ $ctrl.daysLeft(i) }} day{{ $ctrl.daysLeft(i) === 1 ? '' : 's' }}<div class="cell-dim">{{ i.purgeAfterUtc | date:'MM/dd/yyyy' }}</div></td>
+              <td class="data-table__actions">
+                <button type="button" class="btn btn--sm btn--outline" ng-disabled="i.busy" ng-click="$ctrl.restoreRecord(i)">Restore</button>
+                <button type="button" class="link-btn link-btn--danger" ng-click="$ctrl.askPurge(i)">Delete now</button>
+              </td>
+            </tr>
+            <tr ng-if="!$ctrl.recycle.items.length && !$ctrl.recycle.loading"><td colspan="7" class="grid__state">The recycle bin is empty.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═════════ Letter templates ═════════ -->
+    <section ng-if="$ctrl.tab === 'letters'">
+      <p class="admin__hint">
+        The published version of a document type's template is used for every new PDF of that type; types without one get the plain data sheet.
+        Published versions can't be edited — start a new version, preview it, then publish it (the old one is retired).
+      </p>
+      <div class="admin__toolbar">
+        <span></span>
+        <button type="button" class="btn btn--primary" ng-click="$ctrl.openTemplate(null)">+ New document type</button>
+      </div>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.letters.error">{{ $ctrl.letters.error }}</div>
+      <div class="empty-state" ng-if="$ctrl.letters.loading && !$ctrl.letters.groups.length"><span class="spinner"></span> Loading…</div>
+      <div class="letter-type" ng-repeat="g in $ctrl.letters.groups track by g.documentType">
+        <div class="letter-type__head">
+          <div>
+            <div class="policy__name">{{ g.documentType }}</div>
+            <div class="policy__meta" ng-if="g.published">In use: v{{ g.published.version }}, published {{ g.published.publishedUtc | date:'MM/dd/yyyy' }} by {{ g.published.publishedBy }}</div>
+            <div class="policy__meta policy__meta--warn" ng-if="!g.published">Nothing published — PDFs use the data sheet.</div>
+          </div>
+          <button type="button" class="btn btn--sm btn--outline" ng-click="$ctrl.openTemplate(g.versions[0], true)">New version</button>
+        </div>
+        <table class="data-table data-table--compact">
+          <tbody>
+            <tr ng-repeat="v in g.versions track by v.templateId">
+              <td class="nowrap">v{{ v.version }}</td>
+              <td><span class="state-pill" ng-class="'state-pill--' + (v.status === 'Published' ? 'success' : v.status === 'Draft' ? 'warning' : 'muted')">{{ v.status }}</span></td>
+              <td>{{ v.name }}<div class="cell-dim">{{ v.subject }}</div></td>
+              <td class="cell-dim nowrap">updated {{ v.updatedUtc | date:'MM/dd/yyyy HH:mm' }}</td>
+              <td class="data-table__actions">
+                <button type="button" class="link-btn" ng-click="$ctrl.openTemplate(v)">{{ v.status === 'Draft' ? 'Edit' : 'View' }}</button>
+                <button type="button" class="link-btn link-btn--danger" ng-if="v.status !== 'Retired'" ng-click="$ctrl.retireTemplate(v)">Retire</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state" ng-if="!$ctrl.letters.loading && !$ctrl.letters.groups.length">No letter templates yet.</div>
+    </section>
+
+    <!-- ═════════ Alerts ═════════ -->
+    <section ng-if="$ctrl.tab === 'alerts'">
+      <div class="alert-rules" ng-if="$ctrl.alertsTab.rules">
+        <div class="alert-rules__head">
+          <strong>Checks</strong>
+          <span class="cell-dim">{{ $ctrl.alertsTab.rules.enabled ? 'run every ' + $ctrl.alertsTab.rules.intervalMinutes + ' min on the server; a rule alerts again after ' + $ctrl.alertsTab.rules.cooldownHours + ' h if it is still true' : 'Turned off on this server (Alerts:Enabled)' }}</span>
+        </div>
+        <ul>
+          <li ng-repeat="r in $ctrl.alertsTab.rules.rules track by r.key" ng-class="{ 'is-off': !r.enabled }">
+            <code>{{ r.key }}</code> {{ r.description }}<span class="cell-dim" ng-if="!r.enabled"> (off)</span>
+          </li>
+        </ul>
+        <div class="cell-dim">
+          Notifications: Teams {{ $ctrl.alertsTab.rules.channels.teams ? 'on' : 'not set up' }} ·
+          Email {{ $ctrl.alertsTab.rules.channels.email || 'not set up' }} · always shown here and in the header bell.
+        </div>
+      </div>
+      <div class="admin__toolbar">
+        <label class="admin__inline"><input type="checkbox" ng-model="$ctrl.alertsTab.openOnly" ng-change="$ctrl.loadAlerts()"> Open only</label>
+        <button type="button" class="btn btn--outline" ng-disabled="$ctrl.alertsTab.loading" ng-click="$ctrl.loadAlerts()">
+          <span class="spinner spinner--sm" ng-if="$ctrl.alertsTab.loading"></span> Refresh</button>
+      </div>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.alertsTab.error">{{ $ctrl.alertsTab.error }}</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th scope="col">Raised</th><th scope="col">Alert</th><th scope="col">Sent to</th><th scope="col">State</th></tr></thead>
+          <tbody>
+            <tr ng-repeat="a in $ctrl.alertsTab.items track by a.alertId">
+              <td class="nowrap">{{ a.raisedUtc | date:'MM/dd/yyyy HH:mm' }}</td>
+              <td>
+                <span class="state-pill" ng-class="'state-pill--' + $ctrl.severityCss(a.severity)">{{ a.severity }}</span>
+                <span class="cell-strong">{{ a.title }}</span>
+                <div class="cell-dim">{{ a.message }}</div>
+                <button type="button" class="link-btn" ng-if="a.ruleKey === 'SlaBreaches'" ng-click="$ctrl.showBreached()">Show breached requests</button>
+              </td>
+              <td class="cell-dim">{{ $ctrl.sentTo(a) }}</td>
+              <td class="nowrap">
+                <span ng-if="a.acknowledgedUtc" class="cell-dim">Acknowledged by {{ a.acknowledgedBy }}<br>{{ a.acknowledgedUtc | date:'MM/dd/yyyy HH:mm' }}</span>
+                <button type="button" class="btn btn--sm btn--outline" ng-if="!a.acknowledgedUtc" ng-disabled="a.busy" ng-click="$ctrl.acknowledge(a)">Acknowledge</button>
+              </td>
+            </tr>
+            <tr ng-if="!$ctrl.alertsTab.items.length && !$ctrl.alertsTab.loading"><td colspan="4" class="grid__state">No alerts{{ $ctrl.alertsTab.openOnly ? ' open' : '' }}.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═════════ SLA ═════════ -->
+    <section ng-if="$ctrl.tab === 'sla'">
+      <p class="admin__hint">Each correspondence request has a service level: the time allowed from when it's created to when it finishes. The grid's
+        <strong>Age / SLA</strong> column shows how long a request has taken, and whether it's <em>on track</em>, <em>at risk</em> or <em>breached</em>.
+        Finished requests show <em>met</em> or <em>missed</em>.</p>
+      <div class="empty-state" ng-if="$ctrl.slaTab.loading && !$ctrl.slaTab.form"><span class="spinner"></span></div>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.slaTab.error">
+        {{ $ctrl.slaTab.error }}
+        <ul class="auth-alert__list" ng-if="$ctrl.slaTab.problems.length"><li ng-repeat="p in $ctrl.slaTab.problems track by $index">{{ p }}</li></ul>
+      </div>
+      <div class="notice notice--success" role="status" ng-if="$ctrl.slaTab.flash">{{ $ctrl.slaTab.flash }}</div>
+
+      <form class="sla-admin" ng-if="$ctrl.slaTab.form" ng-submit="$ctrl.saveSla()" novalidate>
+        <div class="sla-admin__card">
+          <h3>Default target</h3>
+          <p>Applies to every customer that doesn't have its own target below.</p>
+          <div class="sla-admin__row">
+            <label class="sla-admin__field">
+              <span class="field-label">SLA</span>
+              <span class="sla-admin__suffix"><input id="sla-default-days" type="number" class="input" min="0.5" max="365" step="0.5" required
+                     ng-model="$ctrl.slaTab.form.defaultDays" aria-label="Default SLA in days"> days</span>
+            </label>
+            <div class="sla-admin__field">
+              <span class="field-label">Count</span>
+              <div class="segmented" role="group" aria-label="How days are counted">
+                <button type="button" ng-class="{ 'is-active': $ctrl.slaTab.form.businessDays }" aria-pressed="{{ $ctrl.slaTab.form.businessDays }}"
+                        ng-click="$ctrl.slaTab.form.businessDays = true">Business days (Mon–Fri)</button>
+                <button type="button" ng-class="{ 'is-active': !$ctrl.slaTab.form.businessDays }" aria-pressed="{{ !$ctrl.slaTab.form.businessDays }}"
+                        ng-click="$ctrl.slaTab.form.businessDays = false">Calendar days</button>
+              </div>
+            </div>
+            <label class="sla-admin__field">
+              <span class="field-label">Show "At risk" at</span>
+              <span class="sla-admin__suffix"><input id="sla-at-risk" type="number" class="input" min="1" max="99" step="1" required
+                     ng-model="$ctrl.slaTab.form.atRiskPercent" aria-label="At risk threshold, percent of the SLA"> % of the SLA</span>
+            </label>
+          </div>
+          <div class="sla-admin__preview">{{ $ctrl.slaExample() }}</div>
+        </div>
+
+        <div class="sla-admin__card">
+          <h3>Customer targets</h3>
+          <p>Give a customer (requesting domain) a different SLA from the default.</p>
+          <div class="table-wrap" ng-if="$ctrl.slaTab.form.customers.length">
+            <table class="data-table sla-admin__targets">
+              <thead><tr><th scope="col">Customer</th><th scope="col">SLA (days)</th><th scope="col"><span class="sr-only">Remove</span></th></tr></thead>
+              <tbody>
+                <tr ng-repeat="c in $ctrl.slaTab.form.customers track by $index">
+                  <td>{{ c.customerName }}</td>
+                  <td><input type="number" class="input" min="0.5" max="365" step="0.5" required ng-model="c.targetDays" aria-label="SLA in days for {{ c.customerName }}"></td>
+                  <td class="data-table__actions"><button type="button" class="link-btn" ng-click="$ctrl.slaRemoveCustomer($index)">Remove</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="cell-dim" ng-if="!$ctrl.slaTab.form.customers.length">No customer targets yet, so every customer uses the default.</div>
+          <div class="sla-admin__add" ng-if="$ctrl.slaAvailableCustomers().length">
+            <select class="input" ng-model="$ctrl.slaTab.newCustomer" ng-options="c for c in $ctrl.slaAvailableCustomers()" aria-label="Customer">
+              <option value="">Choose a customer…</option>
+            </select>
+            <button type="button" class="btn btn--outline" ng-disabled="!$ctrl.slaTab.newCustomer" ng-click="$ctrl.slaAddCustomer()">+ Add target</button>
+          </div>
+        </div>
+
+        <div class="sla-admin__card">
+          <h3>When the clock stops</h3>
+          <p>A request is finished, and its clock stops, when its latest status is one of these. Leave <em>Failed</em> and <em>Error</em> unticked:
+            those requests still need action, so their clock keeps running.</p>
+          <div class="sla-admin__statuses">
+            <label ng-repeat="s in $ctrl.slaTab.statuses track by s"><input type="checkbox" ng-checked="$ctrl.slaIsStop(s)" ng-click="$ctrl.slaToggleStop(s)"> {{ s }}</label>
+          </div>
+        </div>
+
+        <div class="sla-admin__actions">
+          <button type="submit" class="btn btn--primary" ng-disabled="$ctrl.slaTab.saving || !$ctrl.slaDirty()">
+            <span class="spinner spinner--sm" ng-if="$ctrl.slaTab.saving"></span> Save SLA settings</button>
+          <button type="button" class="btn btn--outline" ng-disabled="$ctrl.slaTab.saving || !$ctrl.slaDirty()" ng-click="$ctrl.resetSla()">Discard changes</button>
+          <span class="cell-dim" ng-if="$ctrl.slaTab.saved.updatedBy">Last changed by {{ $ctrl.slaTab.saved.updatedBy }} · {{ $ctrl.slaTab.saved.updatedUtc | date:'MM/dd/yyyy HH:mm' }}</span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ═════════ Audit log ═════════ -->
+    <section ng-if="$ctrl.tab === 'audit'">
+      <form class="admin__toolbar" ng-submit="$ctrl.loadAudit()">
+        <input type="search" class="input admin__search" placeholder="User name (exact)" aria-label="Filter by user name" ng-model="$ctrl.audit.userName">
+        <label class="admin__inline">Show
+          <select class="input input--inline" ng-model="$ctrl.audit.top" ng-options="n for n in [100, 200, 500, 1000]" ng-change="$ctrl.loadAudit()"></select>
+        </label>
+        <button type="submit" class="btn btn--outline" ng-disabled="$ctrl.audit.loading">
+          <span class="spinner spinner--sm" ng-if="$ctrl.audit.loading"></span> Refresh
+        </button>
+      </form>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.audit.error">{{ $ctrl.audit.error }}</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th scope="col">When</th><th scope="col">User</th><th scope="col">Event</th><th scope="col">Outcome</th><th scope="col">Detail</th><th scope="col">IP</th></tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="a in $ctrl.audit.rows track by a.auditId">
+              <td class="nowrap">{{ a.occurredUtc | date:'MM/dd/yyyy HH:mm:ss' }}</td>
+              <td>{{ a.userName || '—' }}</td>
+              <td>{{ a.eventType }}</td>
+              <td><span class="state-pill" ng-class="'state-pill--' + $ctrl.outcomeCss(a.outcome)">{{ a.outcome }}</span></td>
+              <td class="audit__detail">{{ a.detail || '' }}</td>
+              <td class="cell-dim">{{ a.ipAddress }}</td>
+            </tr>
+            <tr ng-if="!$ctrl.audit.rows.length && !$ctrl.audit.loading"><td colspan="6" class="grid__state">No audit entries.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ═════════ User editor ═════════ -->
+<div class="dialog-backdrop" ng-if="$ctrl.editor">
+  <div class="dialog dialog--lg" role="dialog" aria-modal="true" aria-labelledby="user-editor-title">
+    <div class="dialog__header">
+      <h2 class="dialog__title" id="user-editor-title">{{ $ctrl.editor.isNew ? 'Add user' : 'Edit ' + $ctrl.editor.userName }}</h2>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.closeEditor()">×</button>
+    </div>
+    <form class="dialog__body user-editor" name="userForm" novalidate ng-submit="userForm.$valid && $ctrl.saveUser()">
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.editorError">
+        {{ $ctrl.editorError }}
+        <ul ng-if="$ctrl.editorProblems.length"><li ng-repeat="p in $ctrl.editorProblems track by $index">{{ p }}</li></ul>
+      </div>
+
+      <fieldset class="user-editor__section">
+        <legend>Account</legend>
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="field-label" for="ue-username">User name</label>
+            <input id="ue-username" name="userName" class="input" ng-model="$ctrl.editor.userName" ng-readonly="!$ctrl.editor.isNew"
+                   required ng-pattern="/^[A-Za-z0-9._@-]{3,100}$/" autocomplete="off" cc-focus-when="$ctrl.editor.isNew">
+            <div class="form-field__hint">3–100 letters, digits or . _ @ -<span ng-if="!$ctrl.editor.isNew"> · can't be changed</span></div>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="ue-display">Display name</label>
+            <input id="ue-display" class="input" ng-model="$ctrl.editor.displayName" maxlength="200" placeholder="e.g. Jordan Lee">
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="ue-email">Email</label>
+            <input id="ue-email" type="email" class="input" ng-model="$ctrl.editor.email" maxlength="256">
+          </div>
+          <div class="form-field" ng-if="$ctrl.editor.sso">
+            <span class="field-label">Sign-in</span>
+            <div><span class="sso-pill">Microsoft</span> <span class="cell-dim">Password and MFA are managed in Entra ID.</span></div>
+          </div>
+          <div class="form-field form-field--check">
+            <label><input type="checkbox" ng-model="$ctrl.editor.isActive" ng-disabled="$ctrl.editor.self"> Account active</label>
+            <div class="form-field__hint" ng-if="$ctrl.editor.self">You can't deactivate your own account.</div>
+            <div class="form-field__hint" ng-if="!$ctrl.editor.isActive && !$ctrl.editor.self">Inactive users can't sign in; their open sessions end.</div>
+          </div>
+        </div>
+        <div class="form-field" ng-if="$ctrl.editor.isNew">
+          <label class="field-label" for="ue-password">Temporary password</label>
+          <div class="password-input">
+            <input id="ue-password" type="{{ $ctrl.editor.showPassword ? 'text' : 'password' }}" class="input input--mono" ng-model="$ctrl.editor.password" required autocomplete="new-password">
+            <button type="button" class="password-input__toggle" ng-click="$ctrl.newPassword()">Generate</button>
+          </div>
+          <div class="form-field__hint">The user must change it at first sign-in. You'll see it once more after saving.</div>
+        </div>
+      </fieldset>
+
+      <fieldset class="user-editor__section">
+        <legend>Roles <span class="legend-note">what they can do</span></legend>
+        <div class="role-options">
+          <label class="role-option" ng-repeat="r in $ctrl.roles track by r.roleId">
+            <input type="checkbox" ng-model="$ctrl.editor.roles[r.roleName]"
+                   ng-disabled="$ctrl.editor.self && r.roleName === 'Administrator' && $ctrl.editor.roles.Administrator">
+            <span><strong>{{ r.roleName }}</strong><span class="cell-dim">{{ r.description }}</span></span>
+          </label>
+        </div>
+        <div class="group-grants" ng-if="$ctrl.editor.groupRoles.length">
+          <span class="field-label">From Entra groups</span>
+          <span class="role-pill role-pill--group" ng-repeat="r in $ctrl.editor.groupRoles track by r">{{ r }}</span>
+          <span class="cell-dim">Change these on the Microsoft sign-in tab or in Entra ID.</span>
+        </div>
+        <div class="effective">
+          <span class="field-label">Effective permissions</span>
+          <code class="perm-pill" ng-repeat="p in $ctrl.effectivePermissions() track by p">{{ p }}</code>
+          <span class="cell-dim" ng-if="!$ctrl.effectivePermissions().length">None — this user could sign in but do nothing.</span>
+        </div>
+      </fieldset>
+
+      <fieldset class="user-editor__section">
+        <legend>Data access <span class="legend-note">which records and data they can reach (attributes)</span></legend>
+        <div class="form-grid">
+          <div class="scope-picker" ng-repeat="s in [{ key: 'customer', label: 'Customers', all: 'All customers' }, { key: 'delivery', label: 'Delivery methods', all: 'All delivery methods' }] track by s.key">
+            <span class="field-label">{{ s.label }}</span>
+            <label class="scope-picker__mode"><input type="radio" ng-model="$ctrl.editor[s.key].mode" value="all"> {{ s.all }}</label>
+            <label class="scope-picker__mode"><input type="radio" ng-model="$ctrl.editor[s.key].mode" value="some"> Only these:</label>
+            <div class="scope-picker__list" ng-if="$ctrl.editor[s.key].mode === 'some'">
+              <label ng-repeat="o in $ctrl.editor[s.key].options track by o"><input type="checkbox" ng-model="$ctrl.editor[s.key].picked[o]"> {{ o }}</label>
+              <span class="cell-dim" ng-if="!$ctrl.editor[s.key].options.length">No values found in the data yet.</span>
+            </div>
+            <div class="form-field__hint form-field__hint--warn" ng-if="$ctrl.scopeEmpty($ctrl.editor[s.key])">Nothing selected — this user won't see any records.</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-field form-field--check">
+            <label><input type="checkbox" ng-model="$ctrl.editor.pii"> PII clearance</label>
+            <div class="form-field__hint">Lets them open request payloads (names, addresses, policy numbers) — if a role also grants payload access.</div>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="ue-export">Export row limit</label>
+            <input id="ue-export" type="number" min="1" step="1" class="input" ng-model="$ctrl.editor.exportLimit" placeholder="No limit">
+            <div class="form-field__hint">Largest "Export all matching" they can run.</div>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="dialog__footer dialog__footer--flush">
+        <button type="button" class="btn btn--secondary" ng-click="$ctrl.closeEditor()">Cancel</button>
+        <button type="submit" class="btn btn--primary" ng-disabled="userForm.$invalid || $ctrl.editor.saving">
+          <span class="spinner spinner--sm" ng-if="$ctrl.editor.saving"></span> {{ $ctrl.editor.isNew ? 'Create user' : 'Save changes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═════════ Letter template editor ═════════ -->
+<div class="dialog-backdrop" ng-if="$ctrl.tpl">
+  <div class="dialog dialog--lg" role="dialog" aria-modal="true" aria-labelledby="tpl-title">
+    <div class="dialog__header">
+      <h2 class="dialog__title" id="tpl-title">
+        {{ $ctrl.tpl.isNewType ? 'New letter template' : ($ctrl.tpl.draft.documentType + (($ctrl.tpl.version) ? ' v' + $ctrl.tpl.version : ' — new version')) }}
+        <span class="state-pill" ng-class="'state-pill--' + ($ctrl.tpl.status === 'Published' ? 'success' : $ctrl.tpl.status === 'Draft' ? 'warning' : 'muted')">{{ $ctrl.tpl.status }}</span>
+      </h2>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.closeTemplate()">×</button>
+    </div>
+    <div class="dialog__body tpl-editor">
+      <div class="notice notice--info" ng-if="$ctrl.tpl.readOnly">Published and retired versions can't be changed. <button type="button" class="link-btn" ng-click="$ctrl.newVersionFromOpen()">Start a new version from it</button></div>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.tpl.error">{{ $ctrl.tpl.error }}</div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="field-label" for="tpl-documentType">Document type</label>
+          <input id="tpl-documentType" class="input" ng-model="$ctrl.tpl.draft.documentType" ng-readonly="!$ctrl.tpl.isNewType" maxlength="100"
+                 placeholder="As in the payload, e.g. Welcome Kit">
+          <div class="form-field__hint">Matches the payload's DocumentDescription.</div>
+        </div>
+        <div class="form-field">
+          <label class="field-label" for="tpl-name">Template name</label>
+          <input id="tpl-name" class="input" ng-model="$ctrl.tpl.draft.name" ng-readonly="$ctrl.tpl.readOnly" maxlength="200">
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="field-label" for="tpl-subject">Subject line</label>
+        <input id="tpl-subject" class="input" ng-model="$ctrl.tpl.draft.subject" ng-readonly="$ctrl.tpl.readOnly" ng-focus="$ctrl.tplFocus = 'subject'" maxlength="300">
+      </div>
+      <div class="form-field">
+        <label class="field-label" for="tpl-salutation">Salutation</label>
+        <input id="tpl-salutation" class="input" ng-model="$ctrl.tpl.draft.salutation" ng-readonly="$ctrl.tpl.readOnly" ng-focus="$ctrl.tplFocus = 'salutation'">
+      </div>
+      <div class="form-field">
+        <label class="field-label" for="tpl-body">Body <span class="legend-note">blank line = new paragraph</span></label>
+        <textarea id="tpl-body" class="input" rows="10" ng-model="$ctrl.tpl.draft.body" ng-readonly="$ctrl.tpl.readOnly" ng-focus="$ctrl.tplFocus = 'body'"></textarea>
+      </div>
+      <div class="placeholder-chips" ng-if="!$ctrl.tpl.readOnly">
+        <span class="field-label">Insert into {{ $ctrl.tplFocus }}:</span>
+        <button type="button" class="placeholder-chip" ng-repeat="p in $ctrl.letters.placeholders track by p.name" title="{{ p.description }}"
+                ng-mousedown="$event.preventDefault()" ng-click="$ctrl.insertPlaceholder(p.name)">{{ p.name }}</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label class="field-label" for="tpl-closing">Closing</label>
+          <input id="tpl-closing" class="input" ng-model="$ctrl.tpl.draft.closing" ng-readonly="$ctrl.tpl.readOnly" ng-focus="$ctrl.tplFocus = 'closing'">
+        </div>
+        <div class="form-field">
+          <label class="field-label" for="tpl-signatureName">Signed by</label>
+          <input id="tpl-signatureName" class="input" ng-model="$ctrl.tpl.draft.signatureName" ng-readonly="$ctrl.tpl.readOnly" ng-focus="$ctrl.tplFocus = 'signatureName'">
+        </div>
+        <div class="form-field">
+          <label class="field-label" for="tpl-signatureTitle">Title</label>
+          <input id="tpl-signatureTitle" class="input" ng-model="$ctrl.tpl.draft.signatureTitle" ng-readonly="$ctrl.tpl.readOnly" ng-focus="$ctrl.tplFocus = 'signatureTitle'">
+        </div>
+      </div>
+    </div>
+    <div class="dialog__footer">
+      <button type="button" class="btn btn--secondary" ng-click="$ctrl.closeTemplate()">Close</button>
+      <button type="button" class="btn btn--outline" ng-disabled="$ctrl.tpl.previewing" ng-click="$ctrl.previewTemplate()">
+        <span class="spinner spinner--sm" ng-if="$ctrl.tpl.previewing"></span> Preview</button>
+      <button type="button" class="btn btn--outline" ng-if="!$ctrl.tpl.readOnly" ng-disabled="$ctrl.tpl.saving || !$ctrl.tpl.draft.documentType" ng-click="$ctrl.saveTemplate()">Save draft</button>
+      <button type="button" class="btn btn--primary" ng-if="!$ctrl.tpl.readOnly" ng-disabled="$ctrl.tpl.saving || !$ctrl.tpl.draft.documentType" ng-click="$ctrl.publishTemplate()"
+              title="Save and use this version for new PDFs of this type">Publish</button>
+    </div>
+  </div>
+</div>
+
+<pdf-viewer-modal file="$ctrl.letterPreview" on-close="$ctrl.letterPreview = null"></pdf-viewer-modal>
+
+<confirm-dialog show="!!$ctrl.pendingPurge" title="Delete permanently" danger="true" confirm-label="Delete permanently"
+                message="$ctrl.purgeMessage()" on-confirm="$ctrl.confirmPurge()" on-cancel="$ctrl.pendingPurge = null"></confirm-dialog>
+
+<confirm-dialog show="!!$ctrl.pendingDelete" title="Delete user" danger="true" confirm-label="Delete user"
+                message="$ctrl.deleteMessage()" on-confirm="$ctrl.confirmDelete()" on-cancel="$ctrl.pendingDelete = null"></confirm-dialog>
+
+<!-- ═════════ Reset password ═════════ -->
+<div class="dialog-backdrop" ng-if="$ctrl.reset">
+  <div class="dialog dialog--sm" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+    <div class="dialog__header">
+      <h2 class="dialog__title" id="reset-title">Reset password</h2>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.reset = null">×</button>
+    </div>
+    <div class="dialog__body">
+      <p>Set a temporary password for <strong>{{ $ctrl.reset.user.userName }}</strong>. Their open sessions end, and they must choose a new password when they next sign in.</p>
+      <div class="password-input">
+        <input type="{{ $ctrl.reset.show ? 'text' : 'password' }}" class="input input--mono" aria-label="Temporary password" ng-model="$ctrl.reset.password">
+        <button type="button" class="password-input__toggle" ng-click="$ctrl.reset.password = $ctrl.newPasswordValue(); $ctrl.reset.show = true">Generate</button>
+      </div>
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.resetError">{{ $ctrl.resetError }}</div>
+    </div>
+    <div class="dialog__footer">
+      <button type="button" class="btn btn--secondary" ng-click="$ctrl.reset = null">Cancel</button>
+      <button type="button" class="btn btn--danger" ng-disabled="$ctrl.reset.saving || !$ctrl.reset.password" ng-click="$ctrl.saveReset()">Reset password</button>
+    </div>
+  </div>
+</div>

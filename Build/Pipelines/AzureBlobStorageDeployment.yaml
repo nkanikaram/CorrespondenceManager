@@ -1,0 +1,193 @@
+trigger: none
+
+pool: Atlashostedagents
+
+resources:
+  repositories:
+    - repository: Atlas
+      type: git
+      name: SecureCloudEnablement/Atlas
+      ref: Releases/Current/Latest
+
+parameters: 
+  - name: Environment
+    type: string
+    default: 'DVLP'
+    values:
+      - 'DVLP'
+      - 'Demo'
+      - 'Prod'
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - template: Variables/AzureDeployDVLP.yml
+  - ${{ if eq(parameters.Environment, 'Demo') }}:
+    - template: Variables/AzureDeployDEMO.yml
+  - ${{ if eq(parameters.Environment, 'Prod') }}:
+    - template: Variables/AzureDeployPROD.yml
+  
+stages:
+  - stage: DVLP
+    jobs:
+      - job: CreateContainers
+        displayName: 'Create Success and Failure Blob Containers'
+        steps:
+          - checkout: Atlas
+            displayName: 'Get Atlas scripts'
+            path: $(atlasSrcCheckoutPath)
+          - task: AzurePowerShell@5
+            displayName: 'Deploy Storage Account'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/deployStorageAccount.ps1'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Success Container'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/deployStorageAccountContainer.ps1'
+              ScriptArguments: '-SA_NAME "$(SA_NAME)" -SA_CONTAINER_NAME "$(SA_SUCCESS_CONTAINER_NAME)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Failure Container'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/deployStorageAccountContainer.ps1'
+              ScriptArguments: '-SA_NAME "$(SA_NAME)" -SA_CONTAINER_NAME "$(SA_FAILURE_CONTAINER_NAME)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Grant Access to Managed Identity'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/addAccessPolicy.ps1'
+              ScriptArguments: '-StorageAccountName $(SA_NAME) -Identity $(IDENTITY_NAME)'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Grant Access to Developer role group'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/addAccessPolicy.ps1'
+              ScriptArguments: '-StorageAccountName $(SA_NAME) -Identity $(RG_ROLE_GROUP)'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add Allowed Subnet'
+            inputs:
+              azureSubscription: '$(Subscription)'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/Common/AddAtlasAllowedSubnet.ps1'
+              ScriptArguments: '-targetResourceName $(SA_NAME) -targetResourceGroup $(RG_APP_NAME) -sourceResourceName $(APP_NAME) -sourceResourceGroup $(RG_APP_NAME)'
+              azurePowerShellVersion: 'LatestVersion'
+  - stage: Demo
+    jobs:
+      - job: CreateContainers
+        displayName: 'Create Success and Failure Blob Containers'
+        steps:
+          - checkout: Atlas
+            displayName: 'Get Atlas scripts'
+            path: $(atlasSrcCheckoutPath)
+          - task: AzurePowerShell@5
+            displayName: 'Deploy Storage Account'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/deployStorageAccount.ps1'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Success Container'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/deployStorageAccountContainer.ps1'
+              ScriptArguments: '-SA_NAME "$(SA_NAME)" -SA_CONTAINER_NAME "$(SA_SUCCESS_CONTAINER_NAME)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Failure Container'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/deployStorageAccountContainer.ps1'
+              ScriptArguments: '-SA_NAME "$(SA_NAME)" -SA_CONTAINER_NAME "$(SA_FAILURE_CONTAINER_NAME)"'
+              azurePowerShellVersion: 'LatestVersion' 
+          - task: AzurePowerShell@5
+            displayName: 'Grant Access to Managed Identity'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/addAccessPolicy.ps1'
+              ScriptArguments: '-StorageAccountName $(SA_NAME) -Identity $(IDENTITY_NAME)'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Grant Access to Developer role group'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/addAccessPolicy.ps1'
+              ScriptArguments: '-StorageAccountName $(SA_NAME) -Identity $(RG_ROLE_GROUP)'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add Allowed Subnet'
+            inputs:
+              azureSubscription: '$(Subscription)'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/Common/AddAtlasAllowedSubnet.ps1'
+              ScriptArguments: '-targetResourceName $(SA_NAME) -targetResourceGroup $(RG_APP_NAME) -sourceResourceName $(APP_NAME) -sourceResourceGroup $(RG_APP_NAME)'
+              azurePowerShellVersion: 'LatestVersion'
+  - stage: Prod
+    jobs:
+      - job: CreateContainers
+        displayName: 'Create Success and Failure Blob Containers'
+        steps:
+          - checkout: Atlas
+            displayName: 'Get Atlas scripts'
+            path: $(atlasSrcCheckoutPath)
+          - task: AzurePowerShell@5
+            displayName: 'Deploy Storage Account'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/deployStorageAccount.ps1'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Success Container'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/deployStorageAccountContainer.ps1'
+              ScriptArguments: '-SA_NAME "$(SA_NAME)" -SA_CONTAINER_NAME "$(SA_SUCCESS_CONTAINER_NAME)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Create Failure Container'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/deployStorageAccountContainer.ps1'
+              ScriptArguments: '-SA_NAME "$(SA_NAME)" -SA_CONTAINER_NAME "$(SA_FAILURE_CONTAINER_NAME)"'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Grant Access to Managed Identity'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/addAccessPolicy.ps1'
+              ScriptArguments: '-StorageAccountName $(SA_NAME) -Identity $(IDENTITY_NAME)'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Grant Access to Developer role group'
+            inputs:
+              azureSubscription: $(Subscription)
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/StorageAccount/operations/addAccessPolicy.ps1'
+              ScriptArguments: '-StorageAccountName $(SA_NAME) -Identity $(RG_ROLE_GROUP)'
+              azurePowerShellVersion: 'LatestVersion'
+          - task: AzurePowerShell@5
+            displayName: 'Add Allowed Subnet'
+            inputs:
+              azureSubscription: '$(Subscription)'
+              ScriptType: 'FilePath'
+              ScriptPath: '$(atlasSrcRoot)/Deploy/Common/AddAtlasAllowedSubnet.ps1'
+              ScriptArguments: '-targetResourceName $(SA_NAME) -targetResourceGroup $(RG_APP_NAME) -sourceResourceName $(APP_NAME) -sourceResourceGroup $(RG_APP_NAME)'
+              azurePowerShellVersion: 'LatestVersion'

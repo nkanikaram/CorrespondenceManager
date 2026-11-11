@@ -1,0 +1,312 @@
+<login-page ng-if="!$ctrl.user()"></login-page>
+
+<div class="auth-screen" ng-if="$ctrl.mustChangePassword()">
+  <div class="auth-card">
+    <div class="auth-card__brand"><span class="brand__logo" aria-hidden="true">🐬</span><span class="brand__mark">ECCO</span></div>
+    <h1 class="auth-card__title">Choose a new password</h1>
+    <p class="auth-card__lead">Your administrator set a temporary password for <strong>{{ $ctrl.user().userName }}</strong>. Choose your own to continue.</p>
+    <change-password-form forced="true" on-cancel="$ctrl.signOut()"></change-password-form>
+  </div>
+</div>
+
+<div class="page" ng-if="$ctrl.signedIn()" ng-style="{ 'margin-right': $ctrl.bridge.dockWidth + 'px' }">
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand__logo" role="img" aria-label="Dolphin">🐬</span>
+      <div class="brand__text">
+        <span class="brand__mark">ECCO</span>
+        <span class="brand__name">Correspondence Manager</span>
+      </div>
+    </div>
+
+    <nav class="app-nav" aria-label="Main">
+      <a href="#!/" class="app-nav__link" ng-class="{ 'is-active': $ctrl.view === 'search' }" aria-current="{{ $ctrl.view === 'search' ? 'page' : undefined }}">Correspondence</a>
+      <a href="#!/admin" class="app-nav__link" ng-if="$ctrl.canAdminister()" ng-class="{ 'is-active': $ctrl.view === 'admin' }"
+         aria-current="{{ $ctrl.view === 'admin' ? 'page' : undefined }}">Administration</a>
+    </nav>
+
+    <div class="app-header__end">
+      <div class="dropdown" ng-if="$ctrl.canSeeAlerts()" cc-click-outside="$ctrl.alertsOpen = false">
+        <button type="button" class="bell" ng-click="$ctrl.alertsOpen = !$ctrl.alertsOpen" aria-haspopup="true" aria-expanded="{{ !!$ctrl.alertsOpen }}"
+                title="{{ $ctrl.openAlerts.length ? $ctrl.openAlerts.length + ' open alert(s)' : 'No open alerts' }}"
+                aria-label="Alerts: {{ $ctrl.openAlerts.length }} open">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="bell__count" ng-if="$ctrl.openAlerts.length">{{ $ctrl.openAlerts.length }}</span>
+        </button>
+        <div class="dropdown__menu dropdown__menu--end alerts-menu" ng-if="$ctrl.alertsOpen" role="menu">
+          <div class="alerts-menu__head">Alerts</div>
+          <div class="alerts-menu__empty" ng-if="!$ctrl.openAlerts.length">No open alerts. 🎉</div>
+          <div class="alerts-menu__item" ng-repeat="a in $ctrl.openAlerts track by a.alertId" ng-class="'alerts-menu__item--' + (a.severity | lowercase)">
+            <div class="alerts-menu__title">{{ a.title }}</div>
+            <div class="alerts-menu__message">{{ a.message }}</div>
+            <div class="alerts-menu__foot">
+              <span>{{ a.raisedUtc | date:'MM/dd HH:mm' }}</span>
+              <button type="button" class="link-btn" ng-if="a.ruleKey === 'SlaBreaches'" ng-click="$ctrl.showBreached(a)">Show breached</button>
+              <button type="button" class="link-btn" ng-click="$ctrl.acknowledge(a, $event)">Acknowledge</button>
+            </div>
+          </div>
+          <button type="button" class="dropdown__item alerts-menu__all" ng-click="$ctrl.viewAllAlerts()">View all alerts and rules</button>
+        </div>
+      </div>
+      <div class="dropdown" cc-click-outside="$ctrl.closeUserMenu()">
+        <button type="button" class="user-menu__button" ng-click="$ctrl.toggleUserMenu()"
+                aria-haspopup="true" aria-expanded="{{ !!$ctrl.userMenuOpen }}" title="Account">
+          <span class="avatar" aria-hidden="true">{{ $ctrl.initials() }}</span>
+          <span class="user-menu__name">{{ $ctrl.user().displayName }}</span>
+          <span class="caret" aria-hidden="true"></span>
+        </button>
+        <div class="dropdown__menu dropdown__menu--end user-menu" ng-if="$ctrl.userMenuOpen" role="menu" aria-label="Account" ng-attr-style="--menu-top: {{ $ctrl.menuTop }}px">
+          <!-- Who you are -->
+          <div class="um-id">
+            <span class="avatar avatar--lg" aria-hidden="true">{{ $ctrl.initials() }}</span>
+            <div class="um-id__text">
+              <div class="um-id__name">{{ $ctrl.user().displayName }}</div>
+              <div class="um-id__email" title="User name: {{ $ctrl.user().userName }}">{{ $ctrl.user().email || $ctrl.user().userName }}</div>
+              <div class="um-id__tags">
+                <span class="role-pill" ng-repeat="r in $ctrl.user().roles track by r">{{ r }}</span>
+                <span class="um-id__method" ng-if="$ctrl.isSso()">
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="#f25022" d="M1 1h6.5v6.5H1z"/><path fill="#7fba00" d="M8.5 1H15v6.5H8.5z"/><path fill="#00a4ef" d="M1 8.5h6.5V15H1z"/><path fill="#ffb900" d="M8.5 8.5H15V15H8.5z"/></svg>
+                  Microsoft account</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- What you can see, and how secure the account is -->
+          <div class="um-card" ng-if="$ctrl.account()">
+            <div class="um-row" title="{{ $ctrl.scopeTitle($ctrl.account().scope.customers) }}">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V8l7-4 7 4v13M9 10h1.5M13.5 10H15M9 14h1.5M13.5 14H15M10 21v-3h4v3"/></svg>
+              <span class="um-row__k">Customers</span>
+              <span class="um-row__v">{{ $ctrl.scopeText($ctrl.account().scope.customers, 'All customers') }}</span>
+            </div>
+            <div class="um-row" title="{{ $ctrl.scopeTitle($ctrl.account().scope.deliveryMethods) }}">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6 8.5-6"/></svg>
+              <span class="um-row__k">Delivery</span>
+              <span class="um-row__v">{{ $ctrl.scopeText($ctrl.account().scope.deliveryMethods, 'All methods') }}</span>
+            </div>
+            <div class="um-card__sep" role="presentation"></div>
+            <div class="um-row" title="{{ $ctrl.account().previousSignIn ? 'From ' + ($ctrl.account().previousSignIn.ip || 'an unknown address') + ($ctrl.account().previousSignIn.method === 'Microsoft' ? ', with Microsoft' : ', with a password') : '' }}">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span class="um-row__k">Last sign-in</span>
+              <span class="um-row__v" ng-if="$ctrl.account().previousSignIn">{{ $ctrl.friendlyTime($ctrl.account().previousSignIn.utc) }}<span class="um-row__sub"> · {{ $ctrl.ipLabel($ctrl.account().previousSignIn.ip) }}</span></span>
+              <span class="um-row__v" ng-if="!$ctrl.account().previousSignIn">This is your first</span>
+            </div>
+            <div class="um-row" ng-if="$ctrl.sessionEnds()">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.3-7.5 9.5-4.3-1.2-7.5-4.9-7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span class="um-row__k">Session ends</span>
+              <span class="um-row__v">{{ $ctrl.sessionEnds() | date:'HH:mm' }}<span class="um-row__sub"> · {{ $ctrl.minutesLeft() }}</span></span>
+            </div>
+          </div>
+          <div class="um-skeleton" ng-if="!$ctrl.account() && !$ctrl.accountError" aria-hidden="true"><span></span><span></span><span></span></div>
+
+          <div class="um-warn" role="status" ng-if="$ctrl.account().failedSignInsSincePrevious > 0">
+            <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg>
+            <span><strong>{{ $ctrl.account().failedSignInsSincePrevious }} failed sign-in {{ $ctrl.account().failedSignInsSincePrevious === 1 ? 'attempt' : 'attempts' }}</strong> since then.
+              If that wasn't you, <span ng-if="!$ctrl.isSso()">change your password and </span>sign out your other sessions.</span>
+          </div>
+          <div class="um-error" role="alert" ng-if="$ctrl.accountError">{{ $ctrl.accountError }}</div>
+
+          <div class="um-confirm" ng-if="$ctrl.confirmSignOutOthers" role="alertdialog" aria-label="Sign out other sessions">
+            <div class="um-confirm__title">Sign out everywhere else?</div>
+            <div class="um-confirm__text">Every other browser and device signs out now. You stay signed in here.</div>
+            <div class="um-confirm__actions">
+              <button type="button" class="btn btn--sm btn--outline" ng-click="$ctrl.confirmSignOutOthers = false">Cancel</button>
+              <button type="button" class="btn btn--sm btn--danger" ng-disabled="$ctrl.signingOutOthers" ng-click="$ctrl.signOutOthers()">
+                <span class="spinner spinner--sm" ng-if="$ctrl.signingOutOthers"></span> Sign them out</button>
+            </div>
+          </div>
+
+          <div class="um-group" role="group">
+            <button type="button" class="um-item" role="menuitem" ng-click="$ctrl.openPreferences()">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>
+              <span>Preferences</span>
+            </button>
+            <button type="button" class="um-item" role="menuitem" ng-if="!$ctrl.isSso()" ng-click="$ctrl.openChangePassword()">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l1.5 1.5"/></svg>
+              <span>Change password</span>
+            </button>
+            <button type="button" class="um-item" role="menuitem" ng-if="$ctrl.account() && !$ctrl.confirmSignOutOthers" ng-click="$ctrl.confirmSignOutOthers = true">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="13" height="10" rx="1.5"/><path d="M6 18h6M17.5 8H21v12h-6v-2.5"/></svg>
+              <span>Sign out other sessions</span>
+            </button>
+          </div>
+
+          <div class="um-group" role="group">
+            <button type="button" class="um-item" role="menuitem" ng-click="$ctrl.openShortcuts()">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7.5 14h9"/></svg>
+              <span>Keyboard shortcuts</span><kbd class="kbd um-item__end">?</kbd>
+            </button>
+            <a class="um-item" role="menuitem" ng-if="$ctrl.account().support.guideUrl" ng-href="{{ $ctrl.account().support.guideUrl }}" target="_blank" rel="noopener" ng-click="$ctrl.closeUserMenu()">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v15H6a2 2 0 0 0-2 2 2 2 0 0 0 2 2h14"/></svg>
+              <span>User guide</span>
+              <svg class="um-icon um-item__end" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+              <span class="sr-only">(opens in a new tab)</span>
+            </a>
+            <a class="um-item" role="menuitem" ng-if="$ctrl.reportProblemHref()" ng-href="{{ $ctrl.reportProblemHref() }}" ng-click="$ctrl.closeUserMenu()">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z"/><path d="M12 7.5v4M12 13.5h.01"/></svg>
+              <span>Report a problem</span>
+            </a>
+          </div>
+
+          <div class="um-group" role="group">
+            <button type="button" class="um-item um-item--signout" role="menuitem" ng-click="$ctrl.signOut()">
+              <svg class="um-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3M15 16l4-4-4-4M19 12H9"/></svg>
+              <span>Sign out</span>
+            </button>
+          </div>
+
+          <div class="um-foot">
+            <span>Portal {{ $ctrl.version }}<span ng-if="$ctrl.account()"> · API {{ $ctrl.account().version }}</span></span>
+            <span class="um-env" ng-if="$ctrl.account().environment" ng-class="'um-env--' + $ctrl.envTone($ctrl.account().environment)">
+              <span class="um-env__dot" aria-hidden="true"></span>{{ $ctrl.account().environment }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <search-page ng-if="$ctrl.view === 'search'"></search-page>
+  <admin-page ng-if="$ctrl.view === 'admin'"></admin-page>
+
+  <footer class="app-footer">© {{ $ctrl.year }} Correspondence Manager</footer>
+</div>
+
+<div class="dialog-backdrop shell-dialog" ng-if="$ctrl.showChangePassword" ng-click="$event.target === $event.currentTarget && ($ctrl.showChangePassword = false)">
+  <div class="dialog dialog--sm" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
+    <div class="dialog__header">
+      <h2 class="dialog__title" id="change-password-title">Change password</h2>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.showChangePassword = false">×</button>
+    </div>
+    <div class="dialog__body">
+      <change-password-form on-done="$ctrl.showChangePassword = false" on-cancel="$ctrl.showChangePassword = false"></change-password-form>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" ng-if="$ctrl.toast"><toast-message toast="$ctrl.toast" on-close="$ctrl.toast = null"></toast-message></div>
+
+<!-- Preferences: apply at once, saved with the account -->
+<div class="dialog-backdrop shell-dialog" ng-if="$ctrl.showPreferences" ng-click="$event.target === $event.currentTarget && ($ctrl.showPreferences = false)">
+  <div class="dialog dialog--sm prefs" role="dialog" aria-modal="true" aria-labelledby="prefs-title">
+    <div class="dialog__header">
+      <h2 class="dialog__title" id="prefs-title">Preferences</h2>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.showPreferences = false">×</button>
+    </div>
+    <div class="dialog__body">
+      <p class="prefs__lead">Changes apply straight away and are saved with your account, so they follow you to any browser.</p>
+
+      <div class="prefs__row">
+        <span class="field-label" id="pref-theme">Theme</span>
+        <div class="segmented" role="group" aria-labelledby="pref-theme">
+          <button type="button" ng-class="{ 'is-active': $ctrl.currentTheme() === 'light' }" aria-pressed="{{ $ctrl.currentTheme() === 'light' }}" ng-click="$ctrl.setPref('theme', 'light')">Light</button>
+          <button type="button" ng-class="{ 'is-active': $ctrl.currentTheme() === 'dark' }" aria-pressed="{{ $ctrl.currentTheme() === 'dark' }}" ng-click="$ctrl.setPref('theme', 'dark')">Dark</button>
+          <button type="button" ng-class="{ 'is-active': $ctrl.currentTheme() === 'system' }" aria-pressed="{{ $ctrl.currentTheme() === 'system' }}" ng-click="$ctrl.setPref('theme', 'system')">Match system</button>
+        </div>
+      </div>
+
+      <div class="prefs__row">
+        <span class="field-label" id="pref-tz">Show times in</span>
+        <div class="prefs__choices" role="radiogroup" aria-labelledby="pref-tz">
+          <label><input type="radio" name="pref-tz" ng-checked="($ctrl.prefs.timeZone || 'local') === 'local'" ng-click="$ctrl.setPref('timeZone', 'local')">
+            My time zone <span class="cell-dim">{{ $ctrl.timeZoneLabel('local') }}</span></label>
+          <label><input type="radio" name="pref-tz" ng-checked="$ctrl.prefs.timeZone === 'utc'" ng-click="$ctrl.setPref('timeZone', 'utc')">
+            UTC <span class="cell-dim">(the time the server records)</span></label>
+        </div>
+      </div>
+
+      <div class="prefs__row">
+        <label class="field-label" for="pref-page-size">Rows per page</label>
+        <select id="pref-page-size" class="input prefs__select" ng-model="$ctrl.prefs.pageSize" ng-change="$ctrl.setPref('pageSize', $ctrl.prefs.pageSize)"
+                ng-options="s as s for s in $ctrl.pageSizes">
+          <option value="">Default (25)</option>
+        </select>
+      </div>
+
+      <div class="prefs__row">
+        <span class="field-label" id="pref-density">Row density</span>
+        <div class="segmented" role="group" aria-labelledby="pref-density">
+          <button type="button" ng-class="{ 'is-active': ($ctrl.prefs.density || 'comfortable') === 'comfortable' }" aria-pressed="{{ ($ctrl.prefs.density || 'comfortable') === 'comfortable' }}"
+                  ng-click="$ctrl.setPref('density', 'comfortable')">Comfortable</button>
+          <button type="button" ng-class="{ 'is-active': $ctrl.prefs.density === 'compact' }" aria-pressed="{{ $ctrl.prefs.density === 'compact' }}"
+                  ng-click="$ctrl.setPref('density', 'compact')">Compact</button>
+        </div>
+      </div>
+
+      <div class="prefs__section">
+        <h3 class="prefs__heading">Appearance <span class="prefs__heading-note">every screen, including the AI Assistant</span></h3>
+        <button type="button" class="link-btn" ng-disabled="$ctrl.lookIsDefault()" ng-click="$ctrl.resetAppearance()">Reset appearance</button>
+      </div>
+
+      <div class="prefs__row">
+        <label class="field-label" for="pref-font">Font</label>
+        <select id="pref-font" class="input prefs__select" ng-model="$ctrl.prefs.font" ng-change="$ctrl.setPref('font', $ctrl.prefs.font)"
+                ng-options="f.id as f.label for f in $ctrl.look.fonts">
+          <option value="">Segoe UI (default)</option>
+        </select>
+      </div>
+
+      <div class="prefs__row">
+        <span class="field-label" id="pref-size">Text size</span>
+        <div class="segmented" role="group" aria-labelledby="pref-size">
+          <button type="button" ng-repeat="z in $ctrl.look.sizes track by z.id" ng-class="{ 'is-active': ($ctrl.prefs.textSize || 'md') === z.id }"
+                  aria-pressed="{{ ($ctrl.prefs.textSize || 'md') === z.id }}" title="{{ z.title }}" ng-click="$ctrl.setPref('textSize', z.id === 'md' ? null : z.id)">{{ z.label }}</button>
+        </div>
+      </div>
+
+      <div class="prefs__row">
+        <span class="field-label" id="pref-header">Header colour</span>
+        <div class="look__swatches" role="radiogroup" aria-labelledby="pref-header">
+          <button type="button" ng-repeat="h in $ctrl.look.headers track by $index" class="look__swatch" role="radio"
+                  ng-class="{ 'is-active': ($ctrl.prefs.headerColor || null) === h.id, 'look__swatch--theme': !h.id }" ng-attr-style="{{ h.id ? 'background:' + h.id : undefined }}"
+                  aria-checked="{{ ($ctrl.prefs.headerColor || null) === h.id }}" title="{{ h.label }}" aria-label="{{ h.label }}" ng-click="$ctrl.setPref('headerColor', h.id)"></button>
+          <label class="look__custom" ng-class="{ 'is-active': $ctrl.prefs.headerColor && !$ctrl.isPresetHeader() }" title="Choose any colour">
+            <input type="color" ng-model="$ctrl.pick.header" ng-model-options="{ debounce: 250 }" ng-change="$ctrl.setPref('headerColor', $ctrl.pick.header)" aria-label="Custom header colour"> Custom
+          </label>
+        </div>
+      </div>
+
+      <div class="prefs__row">
+        <span class="field-label" id="pref-text">Text colour</span>
+        <div class="look__swatches" role="group" aria-labelledby="pref-text">
+          <div class="segmented">
+            <button type="button" ng-class="{ 'is-active': !$ctrl.prefs.textColor }" aria-pressed="{{ !$ctrl.prefs.textColor }}" ng-click="$ctrl.setPref('textColor', null)">Default</button>
+            <button type="button" ng-class="{ 'is-active': $ctrl.prefs.textColor === 'contrast' }" aria-pressed="{{ $ctrl.prefs.textColor === 'contrast' }}"
+                    title="Pure white on dark, pure black on light" ng-click="$ctrl.setPref('textColor', 'contrast')">High contrast</button>
+          </div>
+          <label class="look__custom" ng-class="{ 'is-active': $ctrl.isCustomText() }" title="Choose any colour">
+            <input type="color" ng-model="$ctrl.pick.text" ng-model-options="{ debounce: 250 }" ng-change="$ctrl.setPref('textColor', $ctrl.pick.text)" aria-label="Custom text colour"> Custom
+          </label>
+        </div>
+        <span class="look__hint look__hint--warn" role="status" ng-if="$ctrl.lookCheck && !$ctrl.lookCheck.ok">
+          ⚠ Hard to read on this background (contrast {{ $ctrl.lookCheck.ratio }}:1; 4.5:1 is the minimum). Try a lighter or darker colour.</span>
+        <span class="look__hint" ng-if="$ctrl.lookCheck && $ctrl.lookCheck.ok">Contrast {{ $ctrl.lookCheck.ratio }}:1, easy to read.</span>
+      </div>
+
+      <div class="notice notice--danger" role="alert" ng-if="$ctrl.prefsError">{{ $ctrl.prefsError }}</div>
+    </div>
+    <div class="dialog__footer prefs__footer">
+      <span class="prefs__saved" role="status" aria-live="polite"><span ng-if="$ctrl.prefsSaved">✓ Saved to your account</span></span>
+      <button type="button" class="btn btn--primary" ng-click="$ctrl.showPreferences = false">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Keyboard shortcuts -->
+<div class="dialog-backdrop shell-dialog" ng-if="$ctrl.showShortcuts" ng-click="$event.target === $event.currentTarget && ($ctrl.showShortcuts = false)">
+  <div class="dialog dialog--sm" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+    <div class="dialog__header">
+      <h2 class="dialog__title" id="shortcuts-title">Keyboard shortcuts</h2>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.showShortcuts = false">×</button>
+    </div>
+    <div class="dialog__body">
+      <table class="shortcuts">
+        <tbody>
+          <tr ng-repeat="s in $ctrl.shortcuts track by $index">
+            <td class="shortcuts__keys"><span ng-repeat="k in s.keys track by $index"><kbd class="kbd">{{ k }}</kbd><span ng-if="!$last" class="cell-dim"> then </span></span></td>
+            <td>{{ s.text }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="cell-dim shortcuts__note">Shortcuts don't run while you're typing in a box.</p>
+    </div>
+  </div>
+</div>

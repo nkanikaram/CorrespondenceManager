@@ -1,0 +1,35 @@
+<div class="dialog-backdrop" ng-if="$ctrl.show" ng-click="$ctrl.hide()">
+  <div class="dialog dialog--lg" role="dialog" aria-modal="true" aria-labelledby="insert-title" ng-click="$event.stopPropagation()">
+    <div class="dialog__header">
+      <span id="insert-title">Insert Correspondence Request</span>
+      <button type="button" class="dialog__close" aria-label="Close" ng-click="$ctrl.hide()">×</button>
+    </div>
+    <div class="dialog__body">
+      <div class="alert alert--info" ng-if="$ctrl.aiContext">
+        <strong>✨ AI-Generated Payload</strong>
+        <div class="pre-wrap ai-context">{{ $ctrl.aiContext }}</div>
+        <small class="muted">Review and modify the JSON below as needed, then submit.</small>
+      </div>
+      <div class="alert alert--success" ng-if="$ctrl.success">Correspondence inserted successfully.</div>
+      <div class="alert alert--danger" ng-if="$ctrl.error">{{ $ctrl.error }}</div>
+
+      <payload-validation-display validation="$ctrl.validation" json-payload="$ctrl.json"
+                                  on-apply-suggestion="$ctrl.applySuggestion(fieldName, autoFix)"></payload-validation-display>
+
+      <label class="field-label" for="insert-json">JSON Payload — POST to <code>/api/CommManager/processcorrespondencerequest</code></label>
+      <textarea id="insert-json" class="input input--code" rows="16" spellcheck="false"
+                ng-model="$ctrl.json" ng-change="$ctrl.onJsonChange()" ng-disabled="$ctrl.loading"></textarea>
+    </div>
+    <div class="dialog__footer">
+      <button type="button" class="btn btn--secondary" ng-click="$ctrl.hide()" ng-disabled="$ctrl.loading">Cancel</button>
+      <button type="button" class="btn btn--outline" ng-if="$ctrl.onPreviewLetter" ng-click="$ctrl.preview()" ng-disabled="$ctrl.loading || $ctrl.previewing || !($ctrl.json || '').trim()"
+              title="See the customer letter this request produces (nothing is sent)">
+        <span class="spinner spinner--sm" ng-if="$ctrl.previewing"></span>Preview letter
+      </button>
+      <button type="button" class="btn btn--primary" ng-click="$ctrl.submit()" ng-disabled="!$ctrl.canSubmit()"
+              title="{{ $ctrl.validation && !$ctrl.validation.isValid ? 'Please fix the blocking errors first' : '' }}">
+        <span class="spinner spinner--sm" ng-if="$ctrl.loading"></span>{{ $ctrl.loading ? 'Submitting…' : 'Submit' }}
+      </button>
+    </div>
+  </div>
+</div>

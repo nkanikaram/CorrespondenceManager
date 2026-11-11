@@ -1,0 +1,176 @@
+parameters:
+  - name: Environment
+    displayName: "Environment to deploy"
+    type: string
+
+stages:
+- stage: DeployInfra
+  displayName: 'Deploy ${{ parameters.Environment }} Infra'
+  jobs:
+    - job: DeployResourceGroup
+      displayName: 'Deploy Resource Group'
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)
+
+          #Deploy Resource Group
+        - task: deployAzureResourceGroup@3
+          displayName: 'Deploy Azure Resource Group'
+          inputs:
+            ConnectedServiceNameARM: '$(Subscription)'
+            rgType: standard
+            enableForAtlas: atlasTrue
+            ResourceGroupName: '$(NSB_RGName)'
+            appDescription: 'ECCO Resource Group'
+            environmentCode: '$(RG_ENVCODE)'
+            cmdbAssetTag: '$(RG_ASSET_TAG)'
+            roleGroup: '$(RG_ROLE_GROUP)'
+            atlasEmailGroup: '$(RG_NOTIFICATION_EMAIL_LIST)'
+            atlaslocation: '$(LOCATION)'
+
+            #Deploy Service Bus Namespace, Queue, and Topic
+    - job: DeployServiceBus
+      dependsOn: DeployResourceGroup
+      displayName: 'Deploy Service Bus Namespace, Queue, and Topic'
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Azure Service Bus Namespace'
+          inputs:
+            azureSubscription: '$(Subscription)'
+            ScriptType: 'FilePath'
+            ScriptPath: '$(atlasSrcRoot)/Deploy/ServiceBus/deployServiceBusNamespace.ps1'
+            azurePowerShellVersion: LatestVersion
+          env:
+            BUS_RG_NAME: $(NSB_RGName)
+            BUS_NAMESPACE: $(BUS_NAMESPACE)
+
+        # Create Service Bus Queues and Topics for services
+    - job: CreateServiceBusEntities
+      displayName: 'Create Service Bus Queues and Topics'
+      dependsOn: DeployServiceBus
+      steps:
+        - task: AzureCLI@2
+          displayName: 'Create Queues and Topics for VentureService, ECSService, etc.'
+          inputs:
+            azureSubscription: '$(Subscription)'
+            scriptType: 'bash'
+            scriptLocation: 'inlineScript'
+            inlineScript: |
+              resourceGroup="$(NSB_RGName)"
+              namespace="$(BUS_NAMESPACE)"
+
+              List your queues and topics here
+              queues=(
+                "addcorrespondencedbendpoint"
+                "addcorrespondencesbusendpoint"
+                "assigndocumentumidendpoint"
+                "callback-queue"
+                "correspondence-queue"
+                "documentum-queue"
+                "ecco-queue-d01"
+                "eccofailedmessagesqueue"
+                "ecs-queue"
+                "ecs-status-queue"
+                "email-correspondence-queue"
+                "print-correspondence-queue"
+                "processrequestendpoint"
+                "requestcompositionendpoint"
+                "sms-correspondence-queue"
+                "status-update-queue"
+                "updatearchivedstatusdbendpoint"
+                "updatecorrespondencedbendpoint"
+                "venturefusion-queue"
+                "waitforarchiveendpoint",
+                "bundle-1"
+              )
+
+              topics=(
+                "venturefusion-topic"
+                "ecs-topic"
+                "correspondence-topic"
+                "ecco-topic-${RG_ENVCODE}"
+              )
+
+              Create Queues
+              for queue in "${queues[@]}"; do
+                echo "Creating queue: ProcessRequestEndPoint"
+                az servicebus queue create --resource-group "$resourceGroup" --namespace-name "$namespace" --name "ProcessRequestEndPoint"
+              done
+
+              # Create Topics and Subscriptions
+              for topic in "${topics[@]}"; do
+                echo "Creating topic: $topic"
+                az servicebus topic create --resource-group "$resourceGroup" --namespace-name "$namespace" --name "$topic"
+                subscriptionName="${topic}-subscription"
+                echo "Creating subscription: $subscriptionName for topic: $topic"
+                az servicebus topic subscription create --resource-group "$resourceGroup" --namespace-name "$namespace" --topic-name "$topic" --name "$subscriptionName"
+              done
+
+    - job: AddAtlasAllowedSubnets
+      displayName: 'Create Allowed Atlas Subnets for ServiceBus Namespace and Key Vault'
+      dependsOn: CreateServiceBusEntities
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: '$(Subscription)'
+            ScriptType: 'FilePath'
+            ScriptPath: '$(atlasSrcRoot)/Deploy/Common/AddAtlasAllowedSubnet.ps1'
+            ScriptArguments: '-targetResourceName $(BUS_NAMESPACE) -targetResourceGroup $(NSB_RGName) -sourceResourceName $(APP_NAME) -sourceResourceGroup $(RG_APP_NAME)'
+            azurePowerShellVersion: 'LatestVersion'  
+
+    - job: AssignRolesToManagedIdentity
+      displayName: 'Assign RBAC Roles to Managed Identity'
+      dependsOn: AddAtlasAllowedSubnets
+      steps:
+        - task: deployAzureRbacChanges@1
+          displayName: 'Assign NServicebus Owner Role to Managed Identity'
+          inputs:
+            ConnectedServiceNameARM: '$(Subscription)'
+            resourceId: '$(RESOURCE_ID)'
+            identity: '$(IDENTITY_NAME)'
+            permissionsAction: permissionAdd
+            permissions: 'Azure Service Bus Data Owner'
+        - task: deployAzureRbacChanges@1
+          displayName: 'Assign NServicebus Sender Role to Managed Identity'
+          inputs:
+            ConnectedServiceNameARM: '$(Subscription)'
+            resourceId: '$(RESOURCE_ID)'
+            identity: '$(IDENTITY_NAME)'
+            permissionsAction: permissionAdd
+            permissions: 'Azure Service Bus Data Sender'
+        - task: deployAzureRbacChanges@1
+          displayName: 'Assign NServicebus Receiver Role to Managed Identity'
+          inputs:
+            ConnectedServiceNameARM: '$(Subscription)'
+            resourceId: '$(RESOURCE_ID)'
+            identity: '$(IDENTITY_NAME)'
+            permissionsAction: permissionAdd
+            permissions: 'Azure Service Bus Data Receiver'
+
+    - job: AssignRolesToRGRoleGroup
+      displayName: 'Assign RBAC Roles to RG Role Group'
+      dependsOn: AddAtlasAllowedSubnets
+      steps:
+        - task: deployAzureRbacChanges@1
+          displayName: 'Assign NServicebus Sender Role to RG Role Group'
+          inputs:
+            ConnectedServiceNameARM: '$(Subscription)'
+            resourceId: '$(RESOURCE_ID)'
+            identity: '$(RG_ROLE_GROUP)'
+            permissionsAction: permissionAdd
+            permissions: 'Azure Service Bus Data Sender'
+        - task: deployAzureRbacChanges@1
+          displayName: 'Assign NServicebus Receiver Role to RG Role Group'
+          inputs:
+            ConnectedServiceNameARM: '$(Subscription)'
+            resourceId: '$(RESOURCE_ID)'
+            identity: '$(RG_ROLE_GROUP)'
+            permissionsAction: permissionAdd
+            permissions: 'Azure Service Bus Data Receiver'

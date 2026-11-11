@@ -1,0 +1,32 @@
+{
+  "productinput": [
+    {
+      "title": "ECCO",
+      "description": "This product will be used for ECCO correspondance orchestrator API subscription",
+      "LegalTerms": "ECCO",
+      "apis": [
+        {
+          "name": "ECCO",
+          "version": "v1"
+        },
+        {
+          "name": "DocIDGeneratorService",
+          "version": "v1"
+        },
+        {
+          "name": "openid-connect-discovery",
+          "version": "V1"
+        },
+        {
+          "name": "openid-connect-authorization",
+          "version": "V1"
+        }
+      ],
+      "groups": [
+        {
+          "name": "Developers"
+        }
+      ]
+    }
+  ]
+}

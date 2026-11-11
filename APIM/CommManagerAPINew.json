@@ -1,0 +1,1090 @@
+{
+	"openapi": "3.0.1",
+	"info": {
+		"title": "ECCO API",
+		"description": "ECCO API for correspondence orchestration. Owned by DS-ECCO@trustage.com",
+		"version": "v1"
+	},
+	"servers": [
+		{
+			"url": "__APIMURI__"
+		}
+	],
+	"paths": {
+		"/healthcheck": {
+			"get": {
+				"summary": "Comm Manager status Check",
+				"description": "Checks if API is running",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/vfhealthcheck": {
+			"get": {
+				"summary": "Venture Fusion status Check",
+				"description": "Checks if Venture Fusion service/API is healthy",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/health": {
+			"get": {
+				"summary": "Detailed Health Check",
+				"description": "Checks the health of the API in detail",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache": {
+			"get": {
+				"summary": "Gets the cache detail",
+				"description": "Gets the status of cache",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache/secrets": {
+			"get": {
+				"summary": "Secret cache status",
+				"description": "Checks the status of the secret cache",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache/warmup": {
+			"post": {
+				"summary": "Cache Warmup",
+				"description": "Cache warm up will be re-run",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache/clear": {
+			"post": {
+				"summary": "Clears the cache",
+				"description": "Clears the cache",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache/secret/{secretName}": {
+			"get": {
+				"summary": "Get secret by name",
+				"description": "Retrieves the secret from the cache",
+				"parameters": [
+					{
+						"name": "secretName",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Name of the secret to retrieve"
+					},
+					{
+						"name": "includeValue",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "boolean"
+						},
+						"description": "Set to true to include the actual secret value in the response"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/status/docid/{docId}": {
+			"get": {
+				"summary": "Get correspondence status by document ID",
+				"description": "Retrieves the status of a correspondence by document ID",
+				"parameters": [
+					{
+						"name": "docId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "The document ID to retrieve status for"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/status/claim/{claimNumber}": {
+			"get": {
+				"summary": "Get correspondence status by claim number",
+				"description": "Retrieves the status of a correspondence by claim number",
+				"parameters": [
+					{
+						"name": "claimNumber",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "The claim number to retrieve status for"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/status/documenttypes": {
+			"get": {
+				"summary": "Get correspondence status by document types",
+				"description": "Retrieves the status of correspondences by document type search terms (partial match). Accepts comma-separated document type values.",
+				"parameters": [
+					{
+						"name": "documentTypes",
+						"in": "query",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Comma-separated list of document type search terms (e.g., 'PGA Welcome Kit,POLICY_LETTER')"
+					},
+					{
+						"name": "pageNumber",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 1
+						},
+						"description": "Page number for pagination (default: 1)"
+					},
+					{
+						"name": "pageSize",
+						"in": "query",
+						"required": false,
+						"schema": {
+							"type": "integer",
+							"default": 25,
+							"maximum": 50
+						},
+						"description": "Number of items per page (default: 25, max: 50)"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/PaginatedCorrespondenceStatusResponse"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request parameters",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "No correspondence found for the provided document types",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/status/correspondencefilterrequest": {
+			"post": {
+				"summary": "Get Filtered Correspondence",
+				"description": "Retrieves filtered correspondence data based on search criteria",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/CorrespondenceFilterRequest"
+							},
+							"examples": {
+								"sample": {
+									"value": {
+										"requestingSystemName": "Payment Guard",
+										"documentDescription": "Welcome Letter",
+										"deliveryMethod": "Mail",
+										"correspondenceRequestStatusCode": "04",
+										"createBeginDate": "01/01/2026",
+										"createEndDate": "02/26/2026",
+										"policyNumber": "PN12345678"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Success",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CorrespondenceFilterResponse"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request body",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/status/correspondence/{correspondenceId}": {
+			"get": {
+				"summary": "Get correspondence status by correspondence ID",
+				"description": "Retrieves the status of a correspondence by correspondence ID",
+				"parameters": [
+					{
+						"name": "correspondenceId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"format": "uuid"
+						},
+						"description": "The correspondence ID to retrieve status for"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache/{secretName}": {
+			"delete": {
+				"summary": "Delete secret by name",
+				"description": "Deletes the secret from the cache",
+				"parameters": [
+					{
+						"name": "secretName",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache/secret/{secretName}/info": {
+			"get": {
+				"summary": "Get secret information by name",
+				"description": "Retrieves the secret information from the cache",
+				"parameters": [
+					{
+						"name": "secretName",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/cache/secret/{secretName}/refresh": {
+			"post": {
+				"summary": "Refresh secret by name",
+				"description": "Refreshes the secret from the cache",
+				"parameters": [
+					{
+						"name": "secretName",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		},
+		"/processcorrespondencerequest": {
+			"post": {
+				"summary": "Process Correspondence Request",
+				"description": "Submits a correspondence processing request to ECCO",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/ProcessRequest"
+							},
+							"examples": {
+								"sample": {
+									"value": {
+										"Process": {
+											"DocId": "0100000822720089136",
+											"RequestingSystemName": "TestCustomer2",
+											"ECCOTrackingPolicyNumber": "NJ50467896",
+											"ECCOTrackingClaimNumber": "9811675814",
+											"ECCOTrackingCustomerId": "8527747272",
+											"DeliveryMethod": "Mail",
+											"DocumentDescription": "PGA Welcome Kit",
+											"MailDeliveryInfo": {
+												"RecipientFullName": "John Doe",
+												"RecipientFirstName": "John",
+												"RecipientLastName": "Doe",
+												"RecipientAddress": {
+													"RecipientAddressLine1": "123 Main St",
+													"RecipientAddressLine2": "Apt 4B",
+													"RecipientAddressLine3": null,
+													"RecipientAddressCity": "Springfield",
+													"RecipientAddressST": "IL",
+													"RecipientAddressZIP": "62704",
+													"RecipientCountry": "US"
+												},
+												"NonUSAddressFlag": false,
+												"BadAddressFlag": false
+											},
+											"CompositionInfo": {
+												"SolutionsId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+												"VersionCode": "PGA",
+												"CompositionSchemaId": "schema-001"
+											},
+											"AdditionalData": {
+												"PolicyNumber": "PGA0123456789",
+												"CurrentDate": "20260130",
+												"InsuredFullName": "John Doe"
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"202": {
+						"description": "Accepted for processing",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SubmissionAccepted"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request body",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/requests/bydocumenttype/{documentType}": {
+			"get": {
+				"summary": "Get correspondence requests by document type",
+				"description": "Retrieves all correspondence requests matching the specified archive document type code. Validates the document type against the CorrespondenceDocumentType lookup table before returning results.",
+				"parameters": [
+					{
+						"name": "documentType",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "The archive document type code to filter correspondence requests by (e.g. 'PGA Welcome Kit')"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Success - returns matching correspondence requests (empty array if none found)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CorrespondenceRequestsByDocumentTypeResponse"
+								},
+								"examples": {
+									"withResults": {
+										"summary": "Response with matching records",
+										"value": {
+											"success": true,
+											"count": 2,
+											"data": [
+												{
+													"correspondenceId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+													"docId": "0100000822720089136",
+													"requestingDomainName": "TestCustomer2",
+													"deliveryMethodCode": "Mail",
+													"versionCode": "PGA",
+													"archiveDocumentTypeCode": "PGA Welcome Kit",
+													"archiveDocumentSubTypeCode": "Standard",
+													"claimNumber": "9811675814",
+													"customerId": "8527747272",
+													"requestCreationTS": "2026-05-26T10:00:00Z",
+													"vfResponseId": "vf-resp-001"
+												}
+											],
+											"documentTypeInfo": {
+												"documentType": "PGA Welcome Kit",
+												"documentSubType": "Standard",
+												"cabinetName": "PGA"
+											},
+											"timestamp": "2026-05-26T10:00:00Z"
+										}
+									},
+									"noResults": {
+										"summary": "Response with no matching records",
+										"value": {
+											"success": true,
+											"count": 0,
+											"data": [],
+											"documentTypeInfo": {
+												"documentType": "PGA Welcome Kit",
+												"documentSubType": "Standard",
+												"cabinetName": "PGA"
+											},
+											"message": "No correspondence requests found for DocumentType: PGA Welcome Kit",
+											"timestamp": "2026-05-26T10:00:00Z"
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad Request - documentType is null or empty",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not Found - documentType does not exist in the CorrespondenceDocumentType lookup table",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal Server Error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"apiKeyHeader": {
+				"type": "apiKey",
+				"name": "Ocp-Apim-Subscription-Key",
+				"in": "header"
+			},
+			"apiKeyQuery": {
+				"type": "apiKey",
+				"name": "subscription-key",
+				"in": "query"
+			}
+		},
+		"schemas": {
+			"CorrespondenceFilterRequest": {
+				"type": "object",
+				"required": [
+					"requestingSystemName",
+					"deliveryMethod"
+				],
+				"properties": {
+					"requestingSystemName": {
+						"type": "string"
+					},
+					"documentDescription": {
+						"type": "string"
+					},
+					"deliveryMethod": {
+						"type": "string"
+					},
+					"correspondenceRequestStatusCode": {
+						"type": "string"
+					},
+					"createBeginDate": {
+						"type": "string",
+						"format": "date"
+					},
+					"createEndDate": {
+						"type": "string",
+						"format": "date"
+					},
+					"policyNumber": {
+						"type": "string"
+					}
+				}
+			},
+			"CorrespondenceFilterResponse": {
+				"type": "object",
+				"properties": {
+					"success": {
+						"type": "boolean"
+					},
+					"count": {
+						"type": "integer"
+					},
+					"data": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"docId": {
+									"type": "string"
+								},
+								"correspondenceId": {
+									"type": "string",
+									"format": "uuid"
+								},
+								"requestCreationTS": {
+									"type": "string",
+									"format": "date-time"
+								},
+								"deliveryMethodName": {
+									"type": "string"
+								},
+								"currentStatusCode": {
+									"type": "string"
+								},
+								"currentStatusDescription": {
+									"type": "string"
+								},
+								"documentDescription": {
+									"type": "string"
+								},
+								"requestingSystemName": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"timestamp": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"ProcessRequest": {
+				"type": "object",
+				"required": [
+					"Process"
+				],
+				"properties": {
+					"Process": {
+						"$ref": "#/components/schemas/Process"
+					}
+				}
+			},
+			"Process": {
+				"type": "object",
+				"required": [
+					"RequestingSystemName",
+					"DeliveryMethod"
+				],
+				"properties": {
+					"DocId": {
+						"type": "string",
+						"nullable": true
+					},
+					"RequestingSystemName": {
+						"type": "string",
+						"nullable": false
+					},
+					"ECCOTrackingClaimNumber": {
+						"type": "string",
+						"nullable": true
+					},
+					"ECCOTrackingCustomerId": {
+						"type": "string",
+						"nullable": true
+					},
+					"ECCOTrackingPolicyNumber": {
+						"type": "string",
+						"nullable": true
+					},
+					"DeliveryMethod": {
+						"type": "string",
+						"nullable": false
+					},
+					"DocumentDescription": {
+						"type": "string",
+						"nullable": true
+					},
+					"MailDeliveryInfo": {
+						"$ref": "#/components/schemas/MailDeliveryInfo"
+					},
+					"CompositionInfo": {
+						"$ref": "#/components/schemas/CompositionInfo"
+					},
+
+					"AdditionalData": {
+						"type": "object",
+						"nullable": true,
+						"additionalProperties": true,
+						"description": "Dynamic key-value pairs for additional data specific to the correspondence type",
+						"example": {
+							"PolicyNumber": "PGA0123456789",
+							"CurrentDate": "20260130",
+							"InsuredFullName": "John Doe"
+						}
+					}
+				}
+			},
+			"MailDeliveryInfo": {
+				"type": "object",
+				"required": [
+					"RecipientFullName",
+					"RecipientFirstName",
+					"RecipientLastName"
+				],
+				"properties": {
+					"RecipientFullName": {
+						"type": "string",
+						"nullable": false
+					},
+					"RecipientFirstName": {
+						"type": "string",
+						"nullable": false
+					},
+					"RecipientLastName": {
+						"type": "string",
+						"nullable": false
+					},
+					"RecipientAddress": {
+						"$ref": "#/components/schemas/RecipientAddress"
+					},
+					"NonUSAddressFlag": {
+						"type": "boolean"
+					},
+					"BadAddressFlag": {
+						"type": "boolean"
+					}
+				}
+			},
+			"RecipientAddress": {
+				"type": "object",
+				"required": [
+					"RecipientAddressLine1",
+					"RecipientAddressCity",
+					"RecipientAddressST",
+					"RecipientAddressZIP",
+					"RecipientCountry"
+				],
+				"properties": {
+					"RecipientAddressLine1": {
+						"type": "string",
+						"nullable": false
+					},
+					"RecipientAddressLine2": {
+						"type": "string",
+						"nullable": true
+					},
+					"RecipientAddressLine3": {
+						"type": "string",
+						"nullable": true
+					},
+					"RecipientAddressCity": {
+						"type": "string",
+						"nullable": false
+					},
+					"RecipientAddressST": {
+						"type": "string",
+						"nullable": false,
+						"minLength": 2,
+						"maxLength": 2,
+						"pattern": "^[A-Z]{2}$"
+					},
+					"RecipientAddressZIP": {
+						"type": "string",
+						"nullable": false,
+						"pattern": "^\\d{5}(-\\d{4})?$"
+					},
+					"RecipientCountry": {
+						"type": "string",
+						"nullable": false
+					}
+				}
+			},
+			"CompositionInfo": {
+				"type": "object",
+				"required": [
+					"SolutionsId"
+				],
+				"properties": {
+					"SolutionsId": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"VersionCode": {
+						"type": "string",
+						"nullable": true
+					},
+					"CompositionSchemaId": {
+						"type": "string"
+					}
+				}
+			},
+			"SubmissionAccepted": {
+				"type": "object",
+				"properties": {
+					"trackingId": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"Accepted",
+							"Queued"
+						]
+					},
+					"receivedAtUtc": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"PaginatedCorrespondenceStatusResponse": {
+				"type": "object",
+				"properties": {
+					"success": {
+						"type": "boolean"
+					},
+					"totalCount": {
+						"type": "integer"
+					},
+					"pageNumber": {
+						"type": "integer"
+					},
+					"pageSize": {
+						"type": "integer"
+					},
+					"totalPages": {
+						"type": "integer"
+					},
+					"hasNextPage": {
+						"type": "boolean"
+					},
+					"hasPreviousPage": {
+						"type": "boolean"
+					},
+					"searchedDocumentTypes": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					},
+					"skippedInvalidTypes": {
+						"type": "array",
+						"nullable": true,
+						"items": {
+							"type": "string"
+						}
+					},
+					"data": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/CorrespondenceStatusItem"
+						}
+					},
+					"timestamp": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			},
+			"CorrespondenceStatusItem": {
+				"type": "object",
+				"properties": {
+					"docId": {
+						"type": "string"
+					},
+					"correspondenceId": {
+						"type": "string",
+						"format": "uuid"
+					},
+					"requestingSystemName": {
+						"type": "string"
+					},
+					"policyNumber": {
+						"type": "string",
+						"description": "Always returns [REDACTED] for PII protection"
+					},
+					"claimNumber": {
+						"type": "string"
+					},
+					"customerId": {
+						"type": "string"
+					},
+					"deliveryMethod": {
+						"type": "string"
+					},
+					"documentType": {
+						"type": "string"
+					},
+					"documentTypeDetails": {
+						"type": "object",
+						"nullable": true,
+						"properties": {
+							"documentType": {
+								"type": "string"
+							},
+							"documentSubType": {
+								"type": "string"
+							},
+							"cabinetName": {
+								"type": "string"
+							}
+						}
+					},
+					"requestCreationDate": {
+						"type": "string",
+						"format": "date-time"
+					},
+					"currentStatus": {
+						"type": "object",
+						"properties": {
+							"statusCode": {
+								"type": "string"
+							},
+							"statusDescription": {
+								"type": "string"
+							},
+							"lastUpdated": {
+								"type": "string",
+								"format": "date-time"
+							},
+							"updatedBy": {
+								"type": "string"
+							}
+						}
+					},
+					"statusHistory": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"sequenceNumber": {
+									"type": "integer"
+								},
+								"statusCode": {
+									"type": "string"
+								},
+								"statusDescription": {
+									"type": "string"
+								},
+								"updatedDate": {
+									"type": "string",
+									"format": "date-time"
+								},
+								"updatedBy": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"processingInfo": {
+						"type": "object",
+						"nullable": true,
+						"properties": {
+							"ventureFusionProcessed": {
+								"type": "boolean"
+							},
+							"ventureFusionStatus": {
+								"type": "string"
+							},
+							"ventureFusionTimestamp": {
+								"type": "string",
+								"format": "date-time"
+							}
+						}
+					}
+				}
+			},
+			"ErrorResponse": {
+				"type": "object",
+				"properties": {
+					"code": {
+						"type": "string"
+					},
+					"message": {
+						"type": "string"
+					},
+					"details": {
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				}
+			},
+			"CorrespondenceRequestsByDocumentTypeResponse": {
+				"type": "object",
+				"properties": {
+					"success": {
+						"type": "boolean"
+					},
+					"count": {
+						"type": "integer"
+					},
+					"data": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"correspondenceId": {
+									"type": "string",
+									"format": "uuid"
+								},
+								"docId": {
+									"type": "string"
+								},
+								"requestingDomainName": {
+									"type": "string"
+								},
+								"deliveryMethodCode": {
+									"type": "string"
+								},
+								"versionCode": {
+									"type": "string"
+								},
+								"archiveDocumentTypeCode": {
+									"type": "string"
+								},
+								"archiveDocumentSubTypeCode": {
+									"type": "string"
+								},
+								"claimNumber": {
+									"type": "string"
+								},
+								"customerId": {
+									"type": "string"
+								},
+								"requestCreationTS": {
+									"type": "string",
+									"format": "date-time"
+								},
+								"vfResponseId": {
+									"type": "string"
+								}
+							}
+						}
+					},
+					"documentTypeInfo": {
+						"type": "object",
+						"properties": {
+							"documentType": {
+								"type": "string"
+							},
+							"documentSubType": {
+								"type": "string"
+							},
+							"cabinetName": {
+								"type": "string"
+							}
+						}
+					},
+					"message": {
+						"type": "string"
+					},
+					"timestamp": {
+						"type": "string",
+						"format": "date-time"
+					}
+				}
+			}
+		}
+	},
+	"security": [
+		{
+			"apiKeyHeader": []
+		},
+		{
+			"apiKeyQuery": []
+		}
+	]
+}

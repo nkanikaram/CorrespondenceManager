@@ -1,0 +1,160 @@
+parameters:
+  - name: Environment
+    displayName: "Environment to deploy"
+    type: string
+
+stages:
+- stage: Deploy_SQL_Database_Infra
+  displayName: 'Deploy ${{ parameters.Environment }} SQL Database Infra'
+  jobs:
+    - job: DeployResourceGroup
+      steps:
+      - checkout: Atlas
+        displayName: 'Get Atlas scripts'
+        path: $(atlasSrcCheckoutPath)
+      - task: deployAzureResourceGroup@3
+        displayName: 'CMFG Deploy Azure Resource Group.'
+        inputs:
+          ConnectedServiceNameARM: '$(Subscription)'
+          rgType: standard
+          enableForAtlas: atlasTrue
+          ResourceGroupName: '$(SQL_RESOURCE_GROUP)'
+          appDescription: 'ECCO DB Resource Group'
+          environmentCode: '$(RG_ENVCODE)'
+          cmdbAssetTag: '$(RG_ASSET_TAG)'
+          roleGroup: '$(RG_ROLE_GROUP)'
+          atlasEmailGroup: '$(RG_NOTIFICATION_EMAIL_LIST)'
+          atlaslocation: '$(LOCATION)'
+    # Deploy Database server
+    - job: DeployAzureSQLServer
+      dependsOn: DeployResourceGroup
+      pool: AtlasHostedAgents 
+      displayName: 'Deploy Azure SQL Server'
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)  
+        - checkout: self
+          displayName: 'Get Repo script SqlPermissions file'
+          path: $(selfSrcCheckoutPath)  
+        - task: AzurePowerShell@5
+          displayName: 'Check Resource Group Exists'
+          inputs:
+            azureSubscription: '$(Subscription)'
+            ScriptType: 'InlineScript'
+            Inline: |
+              $rgName = "$(SQL_RESOURCE_GROUP)"
+              $rg = Get-AzResourceGroup -Name $rgName -ErrorAction SilentlyContinue
+              if (-not $rg) {
+                Write-Error "Resource group '$rgName' does not exist. Aborting SQL Server deployment."
+                exit 1
+              } else {
+                Write-Host "Resource group '$rgName' exists. Proceeding..."
+              }
+            azurePowerShellVersion: LatestVersion
+          enabled: true
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Azure SQL Server'
+          inputs:
+            azureSubscription: '$(Subscription)'
+            ScriptType: 'FilePath'
+            ScriptPath: '$(atlasSrcRoot)/Deploy/AzureSQL/deployAzureSQLServer.ps1'
+            azurePowerShellVersion: LatestVersion
+          enabled: true
+    # Deploy Database
+    - job: DeployAzureSQLDatabase
+      dependsOn: DeployAzureSQLServer
+      displayName: 'Deploy Azure SQL Database'
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)  
+        - checkout: self
+          displayName: 'Get Repo script SqlPermissions file'
+          path: $(selfSrcCheckoutPath)      
+        - task: AzurePowerShell@5
+          displayName: 'Check SQL Server Exists'
+          inputs:
+            azureSubscription: '$(Subscription)'
+            ScriptType: 'InlineScript'
+            Inline: |
+              $serverName = "$(SQL_SERVER_NAME)"
+              $rgName = "$(SQL_RESOURCE_GROUP)"
+              $server = Get-AzSqlServer -ResourceGroupName $rgName -ServerName $serverName -ErrorAction SilentlyContinue
+              if (-not $server) {
+                Write-Error "SQL Server '$serverName' does not exist. Aborting SQL Database deployment."
+                exit 1
+              } else {
+                Write-Host "SQL Server '$serverName' exists. Proceeding..."
+              }
+            azurePowerShellVersion: LatestVersion
+          enabled: true
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Azure SQL Database'
+          inputs:
+            azureSubscription: '$(Subscription)'
+            ScriptType: 'FilePath'
+            ScriptPath: '$(atlasSrcRoot)/Deploy/AzureSQL/deployAzureSQLDatabase.ps1'
+            azurePowerShellVersion: LatestVersion
+          enabled: true
+    #############################
+    ##Set database permissions ##
+    #############################
+        - script: echo "SqlPermissions json file path is  $(SQL_PERMISSIONS_FILE)"
+          displayName: 'Output SQL Database Confirmation'
+        - script: dir $(selfSrcRoot)/Build/Pipelines
+          displayName: 'List files in pipelines folder in selfsrcRoot'        
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Azure SQL Database Permissions'
+          inputs:
+            azureSubscription: '$(Subscription)'
+            scriptType: 'FilePath'
+            scriptPath: '$(atlasSrcRoot)/Deploy/AzureSQL/operations/Atlas-ApplySqlPermissions.ps1'
+            scriptArguments: '-sqlServer "$(SQL_SERVER_NAME)" -sqlDatabase "$(SQL_DATABASE_NAME)" -sqlPermissionsFile "$(SQL_PERMISSIONS_FILE)"'
+            azurePowerShellVersion: LatestVersion
+          enabled: true
+    - job: DeployTableSchema
+      dependsOn: DeployAzureSQLDatabase
+      displayName: 'Table creation in DVLP Database'
+      pool: Release-NonProd-Corporate-2016
+      steps:
+        - checkout: ECCO-CommunicationManager
+          displayName: 'Get ECCO-CommunicationManager repo'
+          path: $(selfSrcCheckoutPath)  
+        - task: CmfgReleaseTask@1
+          displayName: 'CMFG Release Task'
+          inputs:
+            AIMObject: 'Non-Managed Accounts-Non-Managed AIM Accounts-SA-RM-Corporate-P'
+            AIMSafe: 'SVR-WIN-CMU-AIM-ALL'
+            AIMReason: 'Release Management deployment'
+            PasswordVariableName: 'svr_password'
+            SearchBlacklistedFiles: false
+            SearchBlacklistedConfig: false
+            SearchBlacklistedDbCommand: false
+            IncludeArchiveFiles: false
+        - task: SqlAzureDacpacDeployment@1
+          displayName: 'Deploy SQL file $(SQL_FILE)'
+          inputs:
+            azureSubscription: '$(Subscription)' 
+            AuthenticationType: aadAuthenticationPassword
+            ServerName: '$(DataSource)' 
+            DatabaseName: '$(DataBase)'
+            aadSqlUsername: 'SA-RM-Corporate-P@cmutual.com'
+            aadSqlPassword: '$(svr_password)'
+            deployType: SqlTask
+            SqlFile: $(SQL_FILE)
+            
+    - job: AddAtlasAllowedSubnets
+      displayName: 'Create Allowed Atlas Subnets for SQL Server'
+      dependsOn: DeployAzureSQLDatabase
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)
+        - task: AzurePowerShell@5
+          inputs:
+            azureSubscription: '$(Subscription)'
+            ScriptType: 'FilePath'
+            ScriptPath: '$(atlasSrcRoot)/Deploy/Common/AddAtlasAllowedSubnet.ps1'
+            ScriptArguments: '-targetResourceName $(SQL_SERVER_NAME) -targetResourceGroup $(SQL_RESOURCE_GROUP) -sourceResourceName $(APP_NAME) -sourceResourceGroup $(RG_APP_NAME)'
+            azurePowerShellVersion: 'LatestVersion'  

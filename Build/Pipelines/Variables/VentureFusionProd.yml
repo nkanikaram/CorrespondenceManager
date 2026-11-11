@@ -1,0 +1,10 @@
+variables:
+    TenantID: '030d3674-7cf7-474f-a1bd-c7a9ed77299c'
+    Scopes: 'https://ventureb2c.onmicrosoft.com/7760f702-c33a-4227-84c4-1705e38bc3e9/.default'
+    ClientID: '3a82d69f-3683-4f23-a24b-a7740d2b73f7'
+    ClientSecret: '<REDACTED - set as a secret pipeline variable or in Key Vault>'
+    CustomerID: 'f8ed3f96-0b3b-44da-99e6-6c2e1edd047d'
+    SubscriptionKey: '<REDACTED>'
+    Uri: 'https://api.venturesolutions.com/v1/api/FusionApi'
+    TokenEndpoint: 'https://login.microsoftonline.com/030d3674-7cf7-474f-a1bd-c7a9ed77299c/oauth2/v2.0/token'
+    UsageID: '1' 

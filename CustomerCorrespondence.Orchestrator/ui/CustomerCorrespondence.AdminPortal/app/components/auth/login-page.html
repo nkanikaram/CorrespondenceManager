@@ -1,0 +1,236 @@
+<div class="auth-screen auth-screen--login">
+  <div class="auth-screen__theme"><theme-toggle></theme-toggle></div>
+
+  <div class="auth-shell">
+    <!-- Brand panel: wide screens only -->
+    <aside class="auth-hero" aria-hidden="true">
+      <div class="auth-hero__brand">
+        <span class="brand__logo">🐬</span>
+        <span class="auth-hero__mark">ECCO</span>
+      </div>
+      <div class="auth-hero__body">
+        <h2 class="auth-hero__title">Every customer letter, tracked from request to delivery.</h2>
+        <ul class="auth-hero__list">
+          <li>
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <span>Search and filter correspondence requests in one place</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+            <span>Preview the generated letter PDF for every request</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span>Get alerts the moment failures or backlogs build up</span>
+          </li>
+        </ul>
+      </div>
+      <div class="auth-hero__foot">© 2026 Correspondence Manager</div>
+    </aside>
+
+    <main class="auth-card auth-card--login">
+      <div class="auth-card__top">
+        <div class="auth-card__brand">
+          <span class="brand__logo" aria-hidden="true">🐬</span>
+          <span class="brand__mark">ECCO</span>
+        </div>
+        <span class="env-badge" ng-if="$ctrl.environment" title="You are not on the production portal">{{ $ctrl.environment }}</span>
+      </div>
+
+      <!-- ═══ Forgot password: ask for a link ═══ -->
+      <div ng-if="$ctrl.view === 'forgot'">
+        <h1 class="auth-card__title">Reset your password</h1>
+        <p class="auth-card__lead">Enter your user name or the email address on your account. We'll email you a link to choose a new password.</p>
+        <div class="auth-alert auth-alert--danger" role="alert" ng-if="$ctrl.error">{{ $ctrl.error }}</div>
+        <form name="forgotForm" class="auth-form" novalidate ng-submit="$ctrl.sendResetLink(forgotForm)">
+          <div class="form-field">
+            <label class="field-label" for="forgot-user">User name or email</label>
+            <div class="input-icon" ng-class="{ 'is-invalid': $ctrl.forgot.submitted && forgotForm.value.$invalid }">
+              <svg class="input-icon__glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+              <input id="forgot-user" name="value" type="text" class="input" autocomplete="username" autocapitalize="none" spellcheck="false"
+                     required maxlength="256" ng-model="$ctrl.forgot.value" cc-focus-when="true" placeholder="e.g. jsmith or jsmith@company.com"
+                     aria-invalid="{{ $ctrl.forgot.submitted && forgotForm.value.$invalid }}" aria-describedby="forgot-user-error">
+            </div>
+            <div class="form-field__error" id="forgot-user-error" ng-if="$ctrl.forgot.submitted && forgotForm.value.$invalid">Enter your user name or email address.</div>
+          </div>
+          <button type="submit" class="btn btn--primary auth-form__submit" ng-disabled="$ctrl.busy">
+            <span class="spinner spinner--sm" ng-if="$ctrl.busy"></span>
+            <span>{{ $ctrl.busy ? 'Sending…' : 'Email me a reset link' }}</span>
+          </button>
+          <button type="button" class="link-btn auth-back" ng-click="$ctrl.backToSignIn()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Back to sign in
+          </button>
+        </form>
+      </div>
+
+      <!-- ═══ Forgot password: link sent ═══ -->
+      <div ng-if="$ctrl.view === 'sent'" class="auth-state">
+        <div class="auth-state__icon auth-state__icon--ok" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+        </div>
+        <h1 class="auth-card__title">Check your email</h1>
+        <p class="auth-card__lead" role="status">{{ $ctrl.sentMessage }}</p>
+        <ul class="auth-state__tips">
+          <li>The link works once, for {{ $ctrl.linkMinutes }} minutes.</li>
+          <li>Asking again replaces the earlier link.</li>
+          <li>No email after a few minutes? Your account may not have an email address on file. Ask a portal administrator to reset your password.</li>
+        </ul>
+        <button type="button" class="btn btn--primary auth-form__submit" ng-click="$ctrl.backToSignIn()">Back to sign in</button>
+        <button type="button" class="link-btn auth-back" ng-click="$ctrl.showForgot()">Didn't get it? Send another link</button>
+      </div>
+
+      <!-- ═══ Reset link: choose a new password ═══ -->
+      <div ng-if="$ctrl.view === 'reset'">
+        <h1 class="auth-card__title">Choose a new password</h1>
+        <p class="auth-card__lead" ng-if="$ctrl.reset.checking">Checking your reset link…</p>
+        <p class="auth-card__lead" ng-if="!$ctrl.reset.checking && $ctrl.reset.userName">For <strong>{{ $ctrl.reset.userName }}</strong>. You'll be signed out everywhere else.</p>
+        <div class="auth-alert auth-alert--danger" role="alert" ng-if="$ctrl.error">
+          {{ $ctrl.error }}
+          <ul class="auth-alert__list" ng-if="$ctrl.problems.length"><li ng-repeat="p in $ctrl.problems track by $index">{{ p }}</li></ul>
+        </div>
+        <div class="empty-state" ng-if="$ctrl.reset.checking"><span class="spinner"></span></div>
+
+        <form class="auth-form" novalidate ng-submit="$ctrl.submitReset()" autocomplete="off" ng-if="!$ctrl.reset.checking && $ctrl.reset.userName">
+          <!-- lets password managers save the new password against the right account -->
+          <input type="text" class="sr-only" autocomplete="username" ng-model="$ctrl.reset.userName" readonly tabindex="-1" aria-hidden="true">
+          <div class="form-field">
+            <label class="field-label" for="reset-next">New password</label>
+            <div class="input-icon input-icon--action">
+              <svg class="input-icon__glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <input id="reset-next" type="{{ $ctrl.showNew ? 'text' : 'password' }}" class="input" autocomplete="new-password" required maxlength="128"
+                     ng-model="$ctrl.reset.next" cc-focus-when="true" aria-describedby="reset-rules">
+              <button type="button" class="password-input__toggle input-icon__action" ng-click="$ctrl.showNew = !$ctrl.showNew"
+                      aria-label="{{ $ctrl.showNew ? 'Hide password' : 'Show password' }}" aria-pressed="{{ !!$ctrl.showNew }}">
+                <svg viewBox="0 0 24 24" aria-hidden="true" ng-if="!$ctrl.showNew"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true" ng-if="$ctrl.showNew"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.7 3.6M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg>
+              </button>
+            </div>
+            <ul class="password-rules" id="reset-rules" aria-live="polite">
+              <li ng-repeat="r in $ctrl.resetRules() track by $index" ng-class="{ 'is-ok': r.ok }">
+                <span class="password-rules__mark" aria-hidden="true">{{ r.ok ? '✓' : '•' }}</span>{{ r.text }}
+                <span class="sr-only">{{ r.ok ? '(met)' : '(not met)' }}</span>
+              </li>
+            </ul>
+          </div>
+          <div class="form-field">
+            <label class="field-label" for="reset-confirm">Confirm new password</label>
+            <div class="input-icon" ng-class="{ 'is-invalid': $ctrl.reset.confirm && $ctrl.reset.confirm !== $ctrl.reset.next }">
+              <svg class="input-icon__glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <input id="reset-confirm" type="{{ $ctrl.showNew ? 'text' : 'password' }}" class="input" autocomplete="new-password" required maxlength="128"
+                     ng-model="$ctrl.reset.confirm" aria-describedby="reset-confirm-error">
+            </div>
+            <div class="form-field__error" id="reset-confirm-error" ng-if="$ctrl.reset.confirm && $ctrl.reset.confirm !== $ctrl.reset.next">The passwords don't match.</div>
+          </div>
+          <button type="submit" class="btn btn--primary auth-form__submit" ng-disabled="$ctrl.busy || !$ctrl.canReset()">
+            <span class="spinner spinner--sm" ng-if="$ctrl.busy"></span>
+            <span>{{ $ctrl.busy ? 'Saving…' : 'Set new password' }}</span>
+          </button>
+        </form>
+        <button type="button" class="link-btn auth-back" ng-click="$ctrl.backToSignIn()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Back to sign in
+        </button>
+      </div>
+
+      <!-- ═══ Reset link expired / used ═══ -->
+      <div ng-if="$ctrl.view === 'linkInvalid'" class="auth-state">
+        <div class="auth-state__icon auth-state__icon--warn" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        </div>
+        <h1 class="auth-card__title">This link has expired</h1>
+        <p class="auth-card__lead">Reset links work once, for a limited time, and only the newest one works. Ask for a new link to continue.</p>
+        <button type="button" class="btn btn--primary auth-form__submit" ng-click="$ctrl.showForgot()" ng-if="$ctrl.passwordReset">Send a new link</button>
+        <button type="button" class="link-btn auth-back" ng-click="$ctrl.backToSignIn()">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Back to sign in
+        </button>
+      </div>
+
+      <!-- ═══ Sign in ═══ -->
+      <div ng-if="$ctrl.view === 'signin'">
+      <h1 class="auth-card__title">Welcome back</h1>
+      <p class="auth-card__lead" ng-if="!$ctrl.sso">Sign in to Correspondence Manager with your portal account.</p>
+      <p class="auth-card__lead" ng-if="$ctrl.sso">Sign in to Correspondence Manager with your work account.</p>
+
+      <div class="auth-alert auth-alert--info" role="status" ng-if="$ctrl.notice && !$ctrl.error">{{ $ctrl.notice }}</div>
+      <div class="auth-alert" ng-class="$ctrl.locked ? 'auth-alert--warning' : 'auth-alert--danger'" role="alert" ng-if="$ctrl.error">
+        {{ $ctrl.error }}
+        <button type="button" class="link-btn auth-alert__action" ng-if="$ctrl.locked && $ctrl.passwordReset" ng-click="$ctrl.showForgot()">Reset your password to unlock it now</button>
+      </div>
+
+      <div class="empty-state" ng-if="$ctrl.loadingConfig"><span class="spinner"></span></div>
+
+      <div class="sso" ng-if="$ctrl.sso && !$ctrl.loadingConfig">
+        <button type="button" class="btn sso__button" ng-click="$ctrl.signInWithMicrosoft()" ng-disabled="$ctrl.ssoBusy">
+          <svg viewBox="0 0 21 21" aria-hidden="true" class="sso__logo"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+          <span>{{ $ctrl.ssoBusy ? 'Signing in…' : 'Sign in with Microsoft' }}</span>
+        </button>
+        <div class="sso__note">Uses your organisation's account and multi-factor authentication.</div>
+
+        <div class="sso__picker" ng-if="$ctrl.pickAccount" role="dialog" aria-label="Pick a test account">
+          <div class="sso__picker-title">Mock Microsoft sign-in (development only)</div>
+          <button type="button" class="sso__account" ng-repeat="a in $ctrl.mockAccounts track by a.key" ng-click="$ctrl.signInWithMicrosoft(a.key)">
+            <strong>{{ a.name }}</strong><span>{{ a.description }}</span>
+          </button>
+        </div>
+
+        <div class="auth-divider" ng-if="$ctrl.localLogin"><span>or</span></div>
+        <button type="button" class="link-btn sso__local-toggle" ng-if="$ctrl.localLogin" ng-click="$ctrl.showLocal = !$ctrl.showLocal"
+                aria-expanded="{{ !!$ctrl.showLocal }}">{{ $ctrl.showLocal ? 'Hide local sign-in' : 'Use a local account instead' }}</button>
+      </div>
+
+      <form name="loginForm" class="auth-form" novalidate ng-submit="$ctrl.submit(loginForm)" autocomplete="on"
+            ng-if="!$ctrl.loadingConfig && $ctrl.localLogin && $ctrl.showLocal">
+        <div class="form-field">
+          <label class="field-label" for="login-user">User name</label>
+          <div class="input-icon" ng-class="{ 'is-invalid': $ctrl.submitted && loginForm.userName.$invalid }">
+            <svg class="input-icon__glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <input id="login-user" name="userName" type="text" class="input" autocomplete="username" autocapitalize="none" spellcheck="false"
+                   required maxlength="100" ng-model="$ctrl.form.userName" cc-focus-when="true" placeholder="e.g. jsmith"
+                   aria-invalid="{{ $ctrl.submitted && loginForm.userName.$invalid }}" aria-describedby="login-user-error">
+          </div>
+          <div class="form-field__error" id="login-user-error" ng-if="$ctrl.submitted && loginForm.userName.$invalid">Enter your user name.</div>
+        </div>
+
+        <div class="form-field">
+          <div class="field-label-row">
+            <label class="field-label" for="login-password">Password</label>
+            <button type="button" class="link-btn forgot-link" ng-if="$ctrl.passwordReset" ng-click="$ctrl.showForgot()">Forgot password?</button>
+          </div>
+          <div class="input-icon input-icon--action" ng-class="{ 'is-invalid': $ctrl.submitted && loginForm.password.$invalid }">
+            <svg class="input-icon__glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="login-password" name="password" type="{{ $ctrl.showPassword ? 'text' : 'password' }}" class="input" autocomplete="current-password"
+                   required maxlength="256" ng-model="$ctrl.form.password" ng-keyup="$ctrl.checkCaps($event)" ng-keydown="$ctrl.checkCaps($event)"
+                   cc-focus-when="$ctrl.focusPassword" aria-invalid="{{ $ctrl.submitted && loginForm.password.$invalid }}"
+                   aria-describedby="login-password-error login-caps">
+            <button type="button" class="password-input__toggle input-icon__action" ng-click="$ctrl.showPassword = !$ctrl.showPassword"
+                    aria-label="{{ $ctrl.showPassword ? 'Hide password' : 'Show password' }}" aria-pressed="{{ $ctrl.showPassword }}"
+                    title="{{ $ctrl.showPassword ? 'Hide password' : 'Show password' }}">
+              <svg viewBox="0 0 24 24" aria-hidden="true" ng-if="!$ctrl.showPassword"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true" ng-if="$ctrl.showPassword"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.7 3.6M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18"/></svg>
+            </button>
+          </div>
+          <div class="form-field__error" id="login-password-error" ng-if="$ctrl.submitted && loginForm.password.$invalid">Enter your password.</div>
+          <div class="form-field__hint form-field__hint--warn caps-hint" id="login-caps" ng-if="$ctrl.capsLock">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 3 12h5v6h8v-6h5z"/></svg>Caps Lock is on.
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn--primary auth-form__submit" ng-disabled="$ctrl.busy">
+          <span class="spinner spinner--sm" ng-if="$ctrl.busy"></span>
+          <span>{{ $ctrl.busy ? 'Signing in…' : 'Sign in' }}</span>
+          <svg class="auth-form__arrow" viewBox="0 0 24 24" aria-hidden="true" ng-if="!$ctrl.busy"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+      </div>
+
+      <div class="auth-card__footnote">
+        <p ng-if="!$ctrl.sso && !$ctrl.passwordReset"><strong>Forgot your password or locked out?</strong> Ask a portal administrator to reset it.</p>
+        <p ng-if="!$ctrl.sso && $ctrl.passwordReset"><strong>No email address on your account?</strong> Ask a portal administrator to reset your password.</p>
+        <p ng-if="$ctrl.sso"><strong>Trouble signing in?</strong> Contact your IT service desk.</p>
+        <p class="auth-card__secure">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.4 8.3 8 9 4.6-.7 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+          Secure sign-in. All sign-ins are recorded.
+        </p>
+      </div>
+    </main>
+  </div>
+</div>

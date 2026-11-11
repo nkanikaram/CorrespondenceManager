@@ -1,0 +1,47 @@
+{
+  "name": "customercorrespondence-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@progress/kendo-data-query": "^1.7.4",
+    "@progress/kendo-react-buttons": "^15.0.0",
+    "@progress/kendo-react-conversational-ui": "^15.0.0",
+    "@progress/kendo-react-dateinputs": "^15.0.0",
+    "@progress/kendo-react-dialogs": "^15.0.0",
+    "@progress/kendo-react-grid": "^15.0.0",
+    "@progress/kendo-react-inputs": "^15.0.0",
+    "@progress/kendo-react-intl": "^15.0.0",
+    "@progress/kendo-theme-default": "^14.1.0",
+    "@progress/kendo-theme-material": "^14.1.0",
+    "@tanstack/react-table": "^8.21.3",
+    "axios": "^1.17.0",
+    "bootstrap": "^5.3.8",
+    "classnames": "^2.5.1",
+    "react": "^19.2.6",
+    "react-bootstrap": "^2.10.10",
+    "react-dom": "^19.2.6",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.5.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12"
+  }
+}

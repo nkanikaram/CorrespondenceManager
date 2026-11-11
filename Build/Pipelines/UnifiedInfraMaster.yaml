@@ -1,0 +1,45 @@
+trigger: none
+
+pool: Atlashostedagents
+
+resources:
+  repositories:
+    - repository: Atlas
+      type: git
+      name: SecureCloudEnablement/Atlas
+      ref: Releases/Current/Latest
+
+    - repository: ECCO-CommunicationManager
+      type: git
+      name: CorporateServices/ECCO-CommunicationManager
+      ref: main
+
+parameters: 
+  - name: Environment
+    type: string
+    default: 'DVLP'
+    values:
+      - 'DVLP'
+      - 'Demo'
+      - 'Prod'
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - template: Variables/AzureDeployDVLP.yml
+  - ${{ if eq(parameters.Environment, 'Demo') }}:
+    - template: Variables/AzureDeployDEMO.yml
+  - ${{ if eq(parameters.Environment, 'Prod') }}:
+    - template: Variables/AzureDeployPROD.yml
+
+stages:
+    - template: UnifiedInfra_AppService_Template.yaml
+      parameters:
+        Environment: ${{ parameters.Environment }}
+    
+    - template: UnifiedInfra_NServicebus_Template.yaml
+      parameters:
+        Environment: ${{ parameters.Environment }}
+    
+    - template: UnifiedInfra_SQLDb_Template.yaml
+      parameters:
+        Environment: ${{ parameters.Environment }}
+  

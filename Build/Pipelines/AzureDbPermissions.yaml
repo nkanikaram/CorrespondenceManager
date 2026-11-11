@@ -1,0 +1,179 @@
+trigger: none
+
+pool: Atlashostedagents
+
+resources:
+  repositories:
+  - repository: Atlas
+    type: git
+    name: SecureCloudEnablement/Atlas
+    ref: Releases/Current/Latest
+  - repository: ECCO-CommunicationManager
+    type: git
+    name: CorporateServices/ECCO-CommunicationManager
+    ref: feature/BuildAndDeploySingleEndpoint
+
+parameters:
+  - name: Environment
+    displayName: "Environment to deploy"
+    type: string
+    default: DVLP
+    values:
+      - DVLP
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscriptions to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - name: RG_ENVCODE
+      value: D02
+    - name: SQL_DATABASE_SERVICEOBJECTIVE
+      value: 'basic'
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: RG_ENVCODE
+      value: M01
+    - name: SQL_DATABASE_SERVICEOBJECTIVE
+      value: 'S1'
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: RG_ENVCODE
+      value: P01
+    - name: SQL_DATABASE_SERVICEOBJECTIVE
+      value: 'S2'
+
+  - name: atlasSrcCheckoutPath
+    value: 's/Atlas'
+  - name: atlasSrcRoot
+    value: '$(Agent.BuildDirectory)/s/Atlas'
+  - name: RG_APP_NAME
+    value: 'RG-CMFG-$(RG_ENVCODE)-ECCDB'
+  - name: LOCATION
+    value: 'East US 2'
+  - name: RG_ASSET_TAG
+    value: '000095520'
+  - name: RG_ROLE_GROUP
+    value: 'R-App-ECCO-Developers-LSA'
+  - name: RG_NOTIFICATION_EMAIL_LIST
+    value: 'DS-ECCO@trustage.com'
+  - name: RELEASE_REQUESTEDFOREMAIL
+    value: 'MB-ECCO'
+  - name: APP_RG_NAME
+    value: '$(RG_APP_NAME)'
+  - name: SQL_RESOURCE_GROUP
+    value: '$(RG_APP_NAME)'
+  - name: SQL_SERVER_NAME
+    value: 'sql-eccdb-$(RG_ENVCODE)'
+  - name: SQL_DATABASE_NAME
+    value: 'ECCDB-$(RG_ENVCODE)'
+  - name: IDENTITY_NAME
+    value: 'MI-$(RG_ENVCODE)-ECCO'
+  - name: selfSrcCheckoutPath
+    value: s/ECCO-CommunicationManager
+  - name: selfSrcRoot
+    value: $(Agent.BuildDirectory)/s/ECCO-CommunicationManager
+  - name: SQL_PERMISSIONS_FILE
+    value: '$(selfSrcRoot)/Build/Pipelines/SqlPermissions.json'
+  - name: NOTIFICATION_EMAIL_LIST
+    value: '$(RG_NOTIFICATION_EMAIL_LIST)'
+  - name: DataSource
+    value: 'sql-eccdb-$(RG_ENVCODE).database.windows.net'
+  - name: DataBase
+    value: 'ECCDB-$(RG_ENVCODE)'
+  - name: selfSrcCheckoutPath
+    value: s/ECCO-CommunicationManager
+  - name: selfSrcRoot
+    value: $(Agent.BuildDirectory)/s/ECCO-CommunicationManager
+  - name: SQL_FILE
+    value: '$(selfSrcRoot)/Build/DBScripts/ECCODBTableScript.sql'
+
+stages:
+  - stage: DVLP
+    jobs:
+    # Deploy Database Permissions
+    - job: DeploySQLDatabasePermissions
+      displayName: 'Deploy Azure SQL Database'
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)  
+        - checkout: self
+          displayName: 'Get Repo script SqlPermissions file'
+          path: $(selfSrcCheckoutPath)      
+    #############################
+    ##Set database permissions ##
+    #############################
+        - script: echo "SqlPermissions json file path is  $(SQL_PERMISSIONS_FILE)"
+          displayName: 'Output SQL Database Confirmation'
+        - script: dir $(selfSrcRoot)/Build/Pipelines
+          displayName: 'List files in pipelines folder in selfsrcRoot'        
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Azure SQL Database Permissions'
+          inputs:
+            azureSubscription: '${{parameters.Subscription}}'
+            scriptType: 'FilePath'
+            scriptPath: '$(atlasSrcRoot)/Deploy/AzureSQL/operations/Atlas-ApplySqlPermissions.ps1'
+            scriptArguments: '-sqlServer "$(SQL_SERVER_NAME)" -sqlDatabase "$(SQL_DATABASE_NAME)" -sqlPermissionsFile "$(SQL_PERMISSIONS_FILE)"'
+            azurePowerShellVersion: LatestVersion
+          enabled: true     
+  - stage: DEMO
+    jobs:
+    # Deploy Database Permissions
+    - job: DeploySQLDatabasePermissions
+      displayName: 'Deploy Azure SQL Database'
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)  
+        - checkout: self
+          displayName: 'Get Repo script SqlPermissions file'
+          path: $(selfSrcCheckoutPath)      
+    #############################
+    ##Set database permissions ##
+    #############################
+        - script: echo "SqlPermissions json file path is  $(SQL_PERMISSIONS_FILE)"
+          displayName: 'Output SQL Database Confirmation'
+        - script: dir $(selfSrcRoot)/Build/Pipelines
+          displayName: 'List files in pipelines folder in selfsrcRoot'        
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Azure SQL Database Permissions'
+          inputs:
+            azureSubscription: '${{parameters.Subscription}}'
+            scriptType: 'FilePath'
+            scriptPath: '$(atlasSrcRoot)/Deploy/AzureSQL/operations/Atlas-ApplySqlPermissions.ps1'
+            scriptArguments: '-sqlServer "$(SQL_SERVER_NAME)" -sqlDatabase "$(SQL_DATABASE_NAME)" -sqlPermissionsFile "$(SQL_PERMISSIONS_FILE)"'
+            azurePowerShellVersion: LatestVersion
+          enabled: true     
+  - stage: PROD
+    jobs:
+    # Deploy Database Permissions
+    - job: DeploySQLDatabasePermissions
+      displayName: 'Deploy Azure SQL Database'
+      steps:
+        - checkout: Atlas
+          displayName: 'Get Atlas scripts'
+          path: $(atlasSrcCheckoutPath)  
+        - checkout: self
+          displayName: 'Get Repo script SqlPermissions file'
+          path: $(selfSrcCheckoutPath)      
+    #############################
+    ##Set database permissions ##
+    #############################
+        - script: echo "SqlPermissions json file path is  $(SQL_PERMISSIONS_FILE)"
+          displayName: 'Output SQL Database Confirmation'
+        - script: dir $(selfSrcRoot)/Build/Pipelines
+          displayName: 'List files in pipelines folder in selfsrcRoot'        
+        - task: AzurePowerShell@5
+          displayName: 'Deploy Azure SQL Database Permissions'
+          inputs:
+            azureSubscription: '${{parameters.Subscription}}'
+            scriptType: 'FilePath'
+            scriptPath: '$(atlasSrcRoot)/Deploy/AzureSQL/operations/Atlas-ApplySqlPermissions.ps1'
+            scriptArguments: '-sqlServer "$(SQL_SERVER_NAME)" -sqlDatabase "$(SQL_DATABASE_NAME)" -sqlPermissionsFile "$(SQL_PERMISSIONS_FILE)"'
+            azurePowerShellVersion: LatestVersion
+          enabled: true

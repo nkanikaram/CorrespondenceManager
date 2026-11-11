@@ -1,0 +1,111 @@
+trigger: none
+
+pool:
+  name: Azure Pipelines    
+  vmImage: 'windows-latest'
+
+resources:
+  repositories:
+  - repository: DynatraceEnablement
+    type: git
+    name: Internal Open Source/DynatraceEnablement
+    ref: main  
+
+parameters:
+  - name: Environment
+    displayName: "Environment to deploy"
+    type: string
+    default: DVLP
+    values:
+      - DVLP
+      - DEMO
+      - PROD
+  - name: Subscription
+    displayName: "Subscriptions to use"
+    type: string
+    default: Corporate NonProd Corporate
+    values:
+      - Corporate NonProd Corporate
+      - Corporate Prod Corporate
+
+variables:
+  - ${{ if eq(parameters.Environment, 'DVLP') }}:
+    - name: RG_ENVCODE
+      value: D03
+    - name: DYNATRACE_ENV
+      value: 'NONPROD'
+  - ${{ if eq(parameters.Environment, 'DEMO') }}:
+    - name: RG_ENVCODE
+      value: M01
+    - name: DYNATRACE_ENV
+      value: 'NONPROD'
+  - ${{ if eq(parameters.Environment, 'PROD') }}:
+    - name: RG_ENVCODE
+      value: P01
+    - name: DYNATRACE_ENV
+      value: 'PROD'
+  - name: dynatraceSrcCheckoutPath
+    value: 's/DyntraceEnablement'
+  - name: DTSrcRoot
+    value: '$(Agent.BuildDirectory)/s/DyntraceEnablement'
+  - name: RG_APP_NAME
+    value: 'RG-CMFG-$(RG_ENVCODE)-ECCO'
+  - name: APP_NAME
+    value: 'AS-CMFG-$(RG_ENVCODE)-ECCO'
+  - name: APP_RG_NAME
+    value: '$(RG_APP_NAME)'
+  - name: APPTYPE
+    value: 'webapp'
+  - name: APP_SUB
+    value: '${{ parameters.Subscription }}'
+  - name: APP_LOCATION
+    value: 'East US 2'
+stages:
+  - stage: DVLP
+    jobs:
+    # Deploy Dynatrace Agent
+    - job: DeployAgent
+      steps:
+      - checkout: DynatraceEnablement
+        displayName: 'Get Dynatrace scripts'
+        path: $(dynatraceSrcCheckoutPath)
+      - task: AzureCLI@2
+        displayName: 'Deploy Dynatrace Extension for Azure Web App'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          scriptType: 'pscore'
+          scriptLocation: 'scriptPath'
+          scriptPath: '$(DTSrcRoot)/Azure/DeployDynatraceAppServiceARM.ps1'
+          arguments:  '-subscription "$(APP_SUB)" -resourceGroup "$(APP_RG_NAME)" -appname "$(APP_NAME)" -DTENV "$(DYNATRACE_ENV)" -appType "$(APPTYPE)" -appLocation "$(APP_LOCATION)" -armJSON "$(DTSrcRoot)/Azure/DynatraceAppServiceARM.json"'
+  - stage: DEMO
+    jobs:
+    # Deploy Dynatrace Agent
+    - job: DeployAgent
+      steps:
+      - checkout: DynatraceEnablement
+        displayName: 'Get Dynatrace scripts'
+        path: $(dynatraceSrcCheckoutPath)
+      - task: AzureCLI@2
+        displayName: 'Deploy Dynatrace Extension for Azure Web App'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          scriptType: 'pscore'
+          scriptLocation: 'scriptPath'
+          scriptPath: '$(DTSrcRoot)/Azure/DeployDynatraceAppServiceARM.ps1'
+          arguments:  '-subscription "$(APP_SUB)" -resourceGroup "$(APP_RG_NAME)" -appname "$(APP_NAME)" -DTENV "$(DYNATRACE_ENV)" -appType "$(APPTYPE)" -appLocation "$(APP_LOCATION)" -armJSON "$(DTSrcRoot)/Azure/DynatraceAppServiceARM.json"'
+  - stage: PROD
+    jobs:
+    # Deploy Dynatrace Agent
+    - job: DeployAgent
+      steps:
+      - checkout: DynatraceEnablement
+        displayName: 'Get Dynatrace scripts'
+        path: $(dynatraceSrcCheckoutPath)
+      - task: AzureCLI@2
+        displayName: 'Deploy Dynatrace Extension for Azure Web App'
+        inputs:
+          azureSubscription: '${{ parameters.Subscription }}'
+          scriptType: 'pscore'
+          scriptLocation: 'scriptPath'
+          scriptPath: '$(DTSrcRoot)/Azure/DeployDynatraceAppServiceARM.ps1'
+          arguments:  '-subscription "$(APP_SUB)" -resourceGroup "$(APP_RG_NAME)" -appname "$(APP_NAME)" -DTENV "$(DYNATRACE_ENV)" -appType "$(APPTYPE)" -appLocation "$(APP_LOCATION)" -armJSON "$(DTSrcRoot)/Azure/DynatraceAppServiceARM.json"'   

@@ -1,0 +1,23 @@
+variables:
+    DbConnectionString: '<REDACTED>'
+    ServiceBusConnectionString: '<REDACTED>'
+    MIClientId: 'd3255983-a076-48dd-9f6c-ce998626143d'
+    AzureServiceBusFullyQualifiedURL: 'sb://NSB-ECCO-Namespace-M01.servicebus.windows.net'
+    ServiceBusPSAKConnectionString: '<REDACTED>'
+    ServiceBusSSAKConnectionString: '<REDACTED>'
+    DocIDApiEndpointUrl: 'https://demo-apimanager.trustage.com/DocIDGeneratorService/v1/?soapAction=http://tempuri.org/GenerateOneID'
+    DocSoapAction: 'http://tempuri.org/GenerateOneID'
+    DocSubscriptionKey: '<REDACTED>'
+    DocSoapEnvelope: "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><GenerateOneID xmlns=\"http://tempuri.org/\" /></soap:Body></soap:Envelope>"
+    BearerServiceAccountClientId: 'SA-ECCO-M'
+    BearerTokenEndpoint: 'https://demo-apimanager.trustage.com/openid-connect-authorization/token/V1/as/token.oauth2'
+    BearerTokenScope: 'openid profile address email'
+    MultiDocSoapAction: 'http://tempuri.org/GenerateIDs'
+    MultiDocSoapEnvelope: "<?xml version=\"1.0\" encoding=\"utf-8\"?><soap:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body><GenerateIDs xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://tempuri.org/\"><intNumberOfIds>500</intNumberOfIds></GenerateIDs></soap:Body></soap:Envelope>"
+    DocIdCount: '500'
+    DocIDThreshold: '100'
+    NumberOfRetriesOnFailure: '3'
+    NumberOfDelayedRetriesOnFailure: '3'
+    DelayBetweenRetriesInSeconds: '10'
+    FailedMessageEndpoint: 'eccofailedmessagesqueue'
+

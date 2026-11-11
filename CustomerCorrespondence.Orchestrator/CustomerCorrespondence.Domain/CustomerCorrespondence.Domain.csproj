@@ -1,0 +1,59 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	  <!-- NuGet Package Metadata -->
+	  <PackageId>ECCO.CommunicationManager.Domain</PackageId>
+	  <Version>1.0.1-Beta</Version>
+	  <Authors>ECCO Development Team</Authors>
+	  <Company>S9uareRoot LLC</Company>
+	  <Product>ECCO Communication Manager</Product>
+	  <Description>Core domain layer for ECCO Communication Manager containing entities, value objects, message contracts, and domain interfaces. This package provides the pure business logic and domain models without infrastructure dependencies, following Clean Architecture and Domain-Driven Design principles.</Description>
+	  <Copyright>Copyright © 2024-2026 S9uareRoot LLC. All rights reserved.</Copyright>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	  <PackageProjectUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</PackageProjectUrl>
+	  <RepositoryUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <PackageTags>ecco;communication-manager;domain;ddd;clean-architecture;entities;value-objects;nservicebus;messaging;correspondence</PackageTags>
+	  <PackageReleaseNotes>
+		  Version 1.0.1-Beta (Initial Release)
+		  - Core domain entities (CorrespondenceRequest, RoutingConfiguration, Solutions)
+		  - Value objects (SequentialProcess, RecipientAddress, MailDeliveryInfo, CompositionInfo)
+		  - NServiceBus message contracts (ICommand, IMessage implementations)
+		  - Domain interfaces for repositories
+		  - Security validation helpers (ProcessRequestHelper)
+		  - VentureFusion API integration models
+		  - Input sanitization and validation methods
+	  </PackageReleaseNotes>
+	  <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+
+	  <!-- Build Configuration -->
+	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	  <IncludeSymbols>true</IncludeSymbols>
+	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	  <EmbedUntrackedSources>true</EmbedUntrackedSources>
+	  <Deterministic>true</Deterministic>
+	  <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+
+	  <!-- Assembly Information -->
+	  <AssemblyTitle>ECCO Communication Manager - Domain Layer</AssemblyTitle>
+	  <AssemblyVersion>1.0.0.0</AssemblyVersion>
+	  <FileVersion>1.0.0.0</FileVersion>
+	  <InformationalVersion>1.0.0</InformationalVersion>
+	  <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NServiceBus" Version="8.2.6" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.7" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+</Project>

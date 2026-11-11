@@ -1,0 +1,171 @@
+<div class="view">
+
+  <!-- ── Toolbar ── -->
+  <div class="toolbar">
+    <div class="toolbar__row">
+      <div class="search-box" cc-click-outside="$ctrl.searchTipsOpen = false">
+        <input type="search" class="input toolbar__search" aria-label="Search" aria-describedby="search-help"
+               placeholder="Search DocIds, claims, customers… several with commas, or status:Failed"
+               ng-model="$ctrl.freeText" ng-keydown="$ctrl.onSearchKeydown($event)" ng-paste="$ctrl.onSearchPaste($event)"
+               ng-change="$ctrl.searchError = null" ng-class="{ 'is-invalid': $ctrl.searchError }">
+        <span class="search-box__count" ng-if="$ctrl.termCount() > 1" title="Rows matching any of these terms">{{ $ctrl.termCount() }} terms</span>
+        <button type="button" class="search-box__tips-btn" ng-click="$ctrl.searchTipsOpen = !$ctrl.searchTipsOpen"
+                aria-haspopup="dialog" aria-expanded="{{ !!$ctrl.searchTipsOpen }}" title="Search tips" aria-label="Search tips">?</button>
+        <div class="search-tips" ng-if="$ctrl.searchTipsOpen" role="dialog" aria-label="Search tips">
+          <div class="search-tips__head">Search tips <span class="search-tips__sub">click an example to add it</span></div>
+          <table class="search-tips__table">
+            <tr><td>Several at once (any of them)</td><td><button type="button" class="search-tips__ex" ng-click="$ctrl.useTip('DOC-1001, DOC-1002')">DOC-1001, DOC-1002</button>
+              <span class="search-tips__note">or paste a column from Excel</span></td></tr>
+            <tr><td>Status</td><td><button type="button" class="search-tips__ex" ng-click="$ctrl.useTip('status:Failed,Processing')">status:Failed,Processing</button></td></tr>
+            <tr><td>Leave out</td><td><button type="button" class="search-tips__ex" ng-click="$ctrl.useTip('-status:Completed')">-status:Completed</button></td></tr>
+            <tr><td>Customer (contains)</td><td><button type="button" class="search-tips__ex" ng-click="$ctrl.useTip('customer:&quot;Claims System&quot;')">customer:"Claims System"</button></td></tr>
+            <tr><td>Created</td><td><button type="button" class="search-tips__ex" ng-click="$ctrl.useTip('from:7d')">from:7d</button>
+              <button type="button" class="search-tips__ex" ng-click="$ctrl.useTip('from:2026-11-01 to:today')">from:2026-11-01 to:today</button></td></tr>
+            <tr><td>SLA</td><td><button type="button" class="search-tips__ex" ng-click="$ctrl.useTip('sla:breached')">sla:breached</button>
+              <span class="search-tips__note">at-risk, on-track, finished</span></td></tr>
+            <tr><td>Also</td><td><code>doc:</code> <code>claim:</code> <code>id:</code> <code>delivery:</code> <code>before:</code> <code>after:</code> <code>on:</code></td></tr>
+          </table>
+          <p class="search-tips__foot">Different filters all apply together. They move into the column filters, so each shows as a chip you can remove.</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn--primary nowrap" ng-click="$ctrl.search()" ng-disabled="$ctrl.loading">
+        <span class="spinner spinner--sm" ng-if="$ctrl.loading"></span><span ng-if="!$ctrl.loading">Search</span>
+      </button>
+      <button type="button" class="btn btn--secondary" ng-click="$ctrl.clearSearch()" ng-disabled="$ctrl.loading">Clear</button>
+
+      <span class="toolbar__spacer"></span>
+
+      <div class="dropdown" ng-if="$ctrl.can('correspondence.export')" cc-click-outside="$ctrl.exportMenuOpen = false">
+        <button type="button" class="btn btn--outline nowrap" ng-disabled="!$ctrl.results || $ctrl.exporting"
+                ng-click="$ctrl.exportMenuOpen = !$ctrl.exportMenuOpen" aria-haspopup="true" aria-expanded="{{ !!$ctrl.exportMenuOpen }}">
+          <span class="spinner spinner--sm" ng-if="$ctrl.exporting"></span><span ng-if="!$ctrl.exporting">Export to Excel</span><span class="caret" aria-hidden="true"></span>
+        </button>
+        <div class="dropdown__menu dropdown__menu--end" ng-if="$ctrl.exportMenuOpen" role="menu">
+          <button type="button" class="dropdown__item" role="menuitem" ng-disabled="!$ctrl.results" ng-click="$ctrl.exportPage()">Export current page ({{ $ctrl.results.items.length || 0 }})</button>
+          <button type="button" class="dropdown__item" role="menuitem" ng-disabled="!$ctrl.selectedCount()" ng-click="$ctrl.exportSelected()">Export selected ({{ $ctrl.selectedCount() }})</button>
+          <button type="button" class="dropdown__item" role="menuitem" ng-disabled="!$ctrl.results" ng-click="$ctrl.exportAll()">Export all matching ({{ $ctrl.results.total || 0 | number }})</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn nowrap" ng-if="$ctrl.can('analytics.view')" ng-class="$ctrl.showAnalytics ? 'btn--primary' : 'btn--outline'"
+              ng-click="$ctrl.toggleAnalytics()" aria-pressed="{{ !!$ctrl.showAnalytics }}">📊 Analytics</button>
+      <button type="button" class="btn btn--outline-primary nowrap" ng-if="$ctrl.can('correspondence.create')" ng-click="$ctrl.openInsert()">+ Insert</button>
+    </div>
+
+    <div class="toolbar__note toolbar__note--accent" ng-if="$ctrl.detectedClaim()">Claim filter: <strong>{{ $ctrl.detectedClaim() }}</strong></div>
+    <smart-error-alert error="$ctrl.error" is-retrying="$ctrl.isRetrying" on-retry="$ctrl.retrySearch()" on-dismiss="$ctrl.error = null"></smart-error-alert>
+  </div>
+
+  <!-- ── Analytics ── -->
+  <analytics-panel ng-if="$ctrl.showAnalytics && $ctrl.can('analytics.view')" aggregates="$ctrl.aggregates" loading="$ctrl.analyticsLoading()" filter-label="$ctrl.filterLabel"></analytics-panel>
+
+  <!-- ── Grid ── -->
+  <main class="content">
+    <!-- Every active filter in one place: AI search, search text and column filters -->
+    <div class="search-error" role="alert" ng-if="$ctrl.searchError">⚠ {{ $ctrl.searchError }}</div>
+    <div class="filter-chips" ng-if="$ctrl.chips().length" role="region" aria-label="Active filters">
+      <span class="filter-chips__label">Filters</span>
+      <span class="filter-chip" ng-repeat="c in $ctrl.chips() track by $index" ng-class="'filter-chip--' + c.kind">
+        <span class="filter-chip__source" ng-if="c.kind === 'ai'" title="Set by the AI assistant">AI</span>
+        <span class="filter-chip__text" title="{{ c.title || c.label }}">{{ c.label }}</span>
+        <button type="button" class="filter-chip__remove" aria-label="Remove filter: {{ c.label }}" ng-click="$ctrl.removeChip(c)" ng-disabled="$ctrl.loading">×</button>
+      </span>
+      <button type="button" class="link-btn filter-chips__clear" ng-click="$ctrl.clearSearch()" ng-disabled="$ctrl.loading">Clear all</button>
+      <span class="filter-chips__count" ng-if="$ctrl.results">{{ $ctrl.results.total | number }} match{{ $ctrl.results.total === 1 ? '' : 'es' }}</span>
+    </div>
+
+    <search-refinement-panel ng-if="$ctrl.results && $ctrl.refinement" refinement="$ctrl.refinement"
+                             on-apply-suggestion="$ctrl.applySuggestion(suggestion)" on-apply-typo-fix="$ctrl.applyTypoFix(corrected)"></search-refinement-panel>
+
+    <!-- Actions for checked rows appear only when something is selected -->
+    <div class="selection-bar" ng-if="$ctrl.selectedCount()" role="region" aria-label="Selected records">
+      <strong>{{ $ctrl.selectedCount() }} selected</strong>
+      <button type="button" class="btn btn--sm btn--warning" ng-if="$ctrl.can('correspondence.resubmit')" ng-click="$ctrl.bulkResubmit()" ng-disabled="$ctrl.resubmitting"
+              title="Resubmit the checked rows' original payload as new correspondence requests">
+        <span class="spinner spinner--sm" ng-if="$ctrl.resubmitting"></span> 🔁 Resubmit
+      </button>
+      <button type="button" class="btn btn--sm btn--outline" ng-if="$ctrl.can('correspondence.export')" ng-click="$ctrl.exportSelected()">Export selected</button>
+      <button type="button" class="btn btn--sm btn--outline" ng-if="$ctrl.can('correspondence.pdf.generate') && $ctrl.pdfStatus.storageConfigured"
+              ng-click="$ctrl.generateSelectedPdfs()" ng-disabled="$ctrl.generatingPdfs">
+        <span class="spinner spinner--sm" ng-if="$ctrl.generatingPdfs"></span> 📄 Generate PDFs
+      </button>
+      <button type="button" class="btn btn--sm btn--danger" ng-if="$ctrl.can('correspondence.delete')" ng-click="$ctrl.askDeleteSelected()" ng-disabled="$ctrl.deleting">
+        <span class="spinner spinner--sm" ng-if="$ctrl.deleting"></span> 🗑 Delete
+      </button>
+      <button type="button" class="link-btn" ng-click="$ctrl.clearSelection()">Clear selection</button>
+    </div>
+
+    <div class="live-banner" ng-if="$ctrl.live.newRecords || $ctrl.live.changed" role="status">
+      <span class="live-banner__dot" aria-hidden="true"></span>
+      <span>
+        <span ng-if="$ctrl.live.newRecords">{{ $ctrl.live.newRecords }} new record{{ $ctrl.live.newRecords === 1 ? '' : 's' }}</span>
+        <span ng-if="$ctrl.live.newRecords && $ctrl.live.changed"> · </span>
+        <span ng-if="$ctrl.live.changed">{{ $ctrl.live.changed }} record{{ $ctrl.live.changed === 1 ? '' : 's' }} on this page updated</span>
+      </span>
+      <button type="button" class="btn btn--sm btn--outline" ng-click="$ctrl.applyLiveUpdates()">Refresh</button>
+      <button type="button" class="link-btn" ng-click="$ctrl.live = {}">Dismiss</button>
+    </div>
+
+    <div class="toolbar__note" ng-if="$ctrl.payloadsHiddenReason && $ctrl.can('correspondence.payload.read')">🔒 Request payloads are hidden. {{ $ctrl.payloadsHiddenReason }}</div>
+
+    <correspondence-grid ng-if="$ctrl.results"
+                         rows="$ctrl.results.items"
+                         total="$ctrl.results.total"
+                         page="$ctrl.page"
+                         page-size="$ctrl.pageSize"
+                         page-size-options="$ctrl.pageSizeOptions()"
+                         client-paging="$ctrl.activeAiParams.pageSize != null"
+                         sort="$ctrl.sort"
+                         filters="$ctrl.filters"
+                         status-options="$ctrl.statusValues"
+                         server-filtering="true"
+                         value-options="$ctrl.valueOptions"
+                         selected-ids="$ctrl.selectedIds"
+                         can-view-payload="$ctrl.can('correspondence.payload.read')"
+                         can-explain="$ctrl.can('ai.use')"
+                         can-delete="$ctrl.can('correspondence.delete')"
+                         pdf-status="$ctrl.pdfStatus"
+                         can-download-pdf="$ctrl.can('correspondence.payload.read')"
+                         can-generate-pdf="$ctrl.can('correspondence.pdf.generate')"
+                         on-pdf="$ctrl.onPdf(row)"
+                         on-details="$ctrl.openDetails(row)"
+                         on-delete="$ctrl.askDeleteRows([row])"
+                         on-sort-change="$ctrl.onSortChange(sort)"
+                         on-page-change="$ctrl.onPageChange(page, size)"
+                         on-filters-change="$ctrl.onFiltersChange(filters)"
+                         on-toggle-select="$ctrl.toggleSelect(id)"
+                         on-toggle-all="$ctrl.toggleAll(ids, checked)"
+                         on-view-payload="$ctrl.viewPayload(row)"
+                         on-explain="$ctrl.explainRecord(row)"></correspondence-grid>
+
+    <div class="empty-state" ng-if="!$ctrl.results && !$ctrl.loading">Enter a search term above and press Search.</div>
+    <div class="empty-state" ng-if="!$ctrl.results && $ctrl.loading"><span class="spinner"></span> Loading correspondence…</div>
+  </main>
+</div>
+
+<assistant-popup ng-if="$ctrl.can('ai.use')"></assistant-popup>
+
+<confirm-dialog show="!!$ctrl.resubmitConfirm" title="Resubmit Records" danger="true" confirm-label="Resubmit"
+                message="$ctrl.resubmitMessage()" on-confirm="$ctrl.executeResubmit()" on-cancel="$ctrl.resubmitConfirm = null"></confirm-dialog>
+
+<confirm-dialog show="!!$ctrl.deleteConfirm" title="Delete records" danger="true" confirm-label="Move to recycle bin"
+                message="$ctrl.deleteMessage()" on-confirm="$ctrl.executeDelete()" on-cancel="$ctrl.deleteConfirm = null"></confirm-dialog>
+
+<insert-correspondence-modal show="$ctrl.showInsert" on-preview-letter="$ctrl.previewLetter(payload)" ai-payload="$ctrl.aiPayload" ai-context="$ctrl.aiContext"
+                             on-hide="$ctrl.onInsertHide()" on-success="$ctrl.onInsertSuccess(message)" on-error="$ctrl.onInsertError(message)"></insert-correspondence-modal>
+
+<record-detail-panel record-id="$ctrl.detailsId" can-explain="$ctrl.can('ai.use')" on-close="$ctrl.detailsId = null"
+                     on-open-pdf="$ctrl.openPdfFromPanel(row)" on-explain="$ctrl.detailsId = null; $ctrl.explainRecord(row)"></record-detail-panel>
+
+<pdf-viewer-modal file="$ctrl.letterPreview" on-close="$ctrl.letterPreview = null"></pdf-viewer-modal>
+
+<pdf-viewer-modal record="$ctrl.pdfViewer" pdf="$ctrl.pdfStatus.items[$ctrl.pdfViewer.id]"
+                  can-generate="$ctrl.can('correspondence.pdf.generate')"
+                  on-close="$ctrl.closePdfViewer()" on-status-change="$ctrl.pdfRegenerated(status)"></pdf-viewer-modal>
+
+<payload-viewer-modal show="!!$ctrl.viewer" payload="$ctrl.viewer.payload" is-encrypted="$ctrl.viewer.isEncrypted"
+                      on-close="$ctrl.closePayload()" on-copied="$ctrl.payloadCopied()"></payload-viewer-modal>
+
+<div class="toast-container">
+  <toast-message toast="$ctrl.toast" on-close="$ctrl.closeToast()"></toast-message>
+</div>

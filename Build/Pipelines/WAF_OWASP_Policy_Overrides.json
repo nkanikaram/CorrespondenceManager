@@ -1,0 +1,12 @@
+[
+  {
+    "ruleGroupName": "REQUEST-920-PROTOCOL-ENFORCEMENT",
+    "rules": [
+      {
+        "ruleId": "920300",
+        "state": "Disabled",
+        "action": "AnomalyScoring"
+      }
+    ]
+  }
+]

@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>ECCO.CommunicationManager.Exceptions</PackageId>
+    <Version>1.0.1</Version>
+    <Authors>ECCO Development Team</Authors>
+    <Company>S9uareRoot LLC</Company>
+    <Product>ECCO Communication Manager</Product>
+    <Description>Custom exception types for ECCO Communication Manager including CorrespondenceException, ValidationException, and SecretNotFoundException.</Description>
+    <Copyright>Copyright © 2024-2026 S9uareRoot LLC. All rights reserved.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</PackageProjectUrl>
+    <RepositoryUrl>https://dev.azure.com/S9uareRootLLC/CorporateServices/_git/ECCO-CommunicationManager</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryBranch>feature/3460848-Update-ECCO-with-Nuget</RepositoryBranch>
+    <PackageTags>ecco;exceptions;error-handling;correspondence</PackageTags>
+    <PackageReleaseNotes>
+      Version 1.0.1 (Current Release)
+      - Custom exception types extracted from Common library
+      - CorrespondenceException: Base exception for correspondence-related errors
+      - ValidationException: Exception for validation failures
+      - SecretNotFoundException: Exception for Azure Key Vault secret retrieval failures
+      - Zero external dependencies for maximum reusability
+      - Full .NET 8 support with nullable reference types enabled
+    </PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    
+    <!-- Build Configuration -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    
+    <!-- Assembly Information -->
+    <AssemblyTitle>ECCO Communication Manager - Exceptions</AssemblyTitle>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <NeutralLanguage>en-US</NeutralLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

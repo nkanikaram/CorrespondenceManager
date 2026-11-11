@@ -1,0 +1,134 @@
+<div class="analytics analytics--state" ng-if="$ctrl.loading">
+  <span class="spinner"></span> Fetching all records for analytics…
+</div>
+<div class="analytics analytics--state" ng-if="!$ctrl.loading && !$ctrl.aggregates">
+  Run a search to see analytics.
+</div>
+
+<div class="analytics" ng-if="!$ctrl.loading && $ctrl.aggregates">
+  <!-- Row 1: KPI cards -->
+  <div class="analytics__kpis">
+    <div class="an-card an-kpi">
+      <div class="an-kpi__accent" style="background: #3b82f6"></div>
+      <div class="an-kpi__body">
+        <div class="an-label">Total Records</div>
+        <div class="an-kpi__value">{{ $ctrl.aggregates.total | number }}</div>
+        <div class="an-kpi__filter" ng-if="$ctrl.filterLabel" title="{{ $ctrl.filterLabel }}">{{ $ctrl.filterLabel }}</div>
+        <div class="an-kpi__sub">{{ $ctrl.aggregates.recordsFetched | number }} records analysed</div>
+      </div>
+    </div>
+    <div class="an-card an-kpi" ng-repeat="k in $ctrl.kpis track by k.label">
+      <div class="an-kpi__accent" ng-style="{ background: k.color }"></div>
+      <div class="an-kpi__body">
+        <div class="an-label" ng-style="{ color: k.color }">{{ k.label }}</div>
+        <div class="an-kpi__value" ng-style="{ color: k.color }">{{ k.pct }}%</div>
+        <div class="an-kpi__sub">{{ k.value | number }} {{ k.sub }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: status donut | volume | delivery pie -->
+  <div class="analytics__row2">
+    <div class="an-card">
+      <div class="an-label">Status Distribution</div>
+      <div class="an-pie">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <path ng-repeat="w in $ctrl.statusWedges track by w.label" ng-attr-d="{{ w.d }}" ng-attr-fill="{{ w.color }}" class="chart-wedge chart-wedge--card">
+            <title>{{ w.label }}: {{ w.count | number }}</title>
+          </path>
+        </svg>
+      </div>
+      <div class="an-legend">
+        <span class="an-legend__item" ng-repeat="w in $ctrl.statusWedges track by w.label"><span class="dot" ng-style="{ background: w.color }"></span>{{ w.label }}</span>
+      </div>
+    </div>
+
+    <div class="an-card">
+      <div class="an-card__head">
+        <div class="an-label">Volume Over Time</div>
+        <div class="an-gran" role="group" aria-label="Granularity">
+          <button type="button" ng-repeat="g in $ctrl.granularities track by g.id" ng-class="{ 'is-active': $ctrl.granularity === g.id }" ng-click="$ctrl.setGranularity(g.id)">{{ g.label }}</button>
+        </div>
+      </div>
+      <div class="an-empty" ng-if="$ctrl.volume.empty">No dated records.</div>
+      <svg class="an-volume" ng-if="!$ctrl.volume.empty" ng-attr-view_box="{{ $ctrl.volume.viewBox }}" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stop-color="#3b82f6" stop-opacity="0.35"></stop>
+            <stop offset="95%" stop-color="#3b82f6" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        <g ng-repeat="t in $ctrl.volume.yTicks track by $index">
+          <line ng-attr-x1="{{ t.x1 }}" ng-attr-x2="{{ t.x2 }}" ng-attr-y1="{{ t.y }}" ng-attr-y2="{{ t.y }}" class="an-gridline"></line>
+          <text ng-attr-x="{{ $ctrl.volume.labelX }}" ng-attr-y="{{ t.y + 3 }}" text-anchor="end" class="an-tick">{{ t.label }}</text>
+        </g>
+        <path ng-attr-d="{{ $ctrl.volume.area }}" fill="url(#volGrad)"></path>
+        <path ng-attr-d="{{ $ctrl.volume.line }}" fill="none" stroke="#3b82f6" stroke-width="2"></path>
+        <g ng-repeat="p in $ctrl.volume.points track by p.date" class="an-point">
+          <rect ng-attr-x="{{ p.x - $ctrl.volume.hitWidth / 2 }}" ng-attr-y="{{ $ctrl.volume.plotTop }}" ng-attr-width="{{ $ctrl.volume.hitWidth }}" ng-attr-height="{{ $ctrl.volume.plotHeight }}" fill="transparent">
+            <title>{{ p.date }} — {{ p.count | number }} requests</title>
+          </rect>
+          <circle ng-attr-cx="{{ p.x }}" ng-attr-cy="{{ p.y }}" r="4" class="an-point__dot"></circle>
+        </g>
+        <text ng-repeat="l in $ctrl.volume.xLabels track by $index" ng-attr-x="{{ l.x }}" ng-attr-y="{{ $ctrl.volume.labelY }}" ng-attr-text-anchor="{{ l.anchor }}" class="an-tick">{{ l.text }}</text>
+      </svg>
+    </div>
+
+    <div class="an-card">
+      <div class="an-label">Delivery Method</div>
+      <div class="an-pie">
+        <svg width="100%" height="174" viewBox="-40 -12 230 174" style="max-width: 230px">
+          <path ng-repeat="w in $ctrl.deliveryWedges track by w.label" ng-attr-d="{{ w.d }}" ng-attr-fill="{{ w.color }}" class="chart-wedge chart-wedge--card">
+            <title>{{ w.label }}: {{ w.count | number }}</title>
+          </path>
+          <text ng-repeat="w in $ctrl.deliveryWedges track by w.label" ng-if="w.showLabel" ng-attr-x="{{ w.labelX }}" ng-attr-y="{{ w.labelY }}" ng-attr-text-anchor="{{ w.anchor }}" dominant-baseline="central" class="an-tick">{{ w.labelText }}</text>
+        </svg>
+      </div>
+      <div class="an-legend">
+        <span class="an-legend__item" ng-repeat="w in $ctrl.deliveryWedges track by w.label"><span class="dot" ng-style="{ background: w.color }"></span>{{ w.label }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: delivery channel performance | processing backlog by age -->
+  <div class="analytics__row3">
+    <div class="an-card">
+      <div class="an-label">Delivery Channel Performance</div>
+      <div class="an-caption">Status breakdown % per delivery method</div>
+      <div class="an-perf">
+        <div class="an-perf__row" ng-repeat="r in $ctrl.perfRows track by r.fullName">
+          <span class="an-perf__label" title="{{ r.fullName }}">{{ r.method }}</span>
+          <div class="an-perf__bar">
+            <div ng-repeat="p in r.parts track by p.name" ng-style="{ width: p.pct + '%', background: p.color }" title="{{ p.name }}: {{ p.pct }}% ({{ p.count | number }})"></div>
+          </div>
+        </div>
+        <div class="an-perf__axis"><span>0%</span><span>50%</span><span>100%</span></div>
+      </div>
+      <div class="an-legend">
+        <span class="an-legend__item" ng-repeat="s in $ctrl.perfStatuses track by s.name"><span class="dot" ng-style="{ background: s.color }"></span>{{ s.name }}</span>
+      </div>
+    </div>
+
+    <div class="an-card">
+      <div class="an-card__head">
+        <div>
+          <div class="an-label" style="color: #f59e0b">Processing Backlog by Age</div>
+          <div class="an-caption">SLA risk — older = higher risk</div>
+        </div>
+        <div class="an-caption">{{ $ctrl.totalProcessing | number }} total</div>
+      </div>
+      <div class="an-age" ng-repeat="b in $ctrl.ageRows track by b.bucket">
+        <div class="an-age__head">
+          <span class="an-age__name"><span class="swatch" ng-style="{ background: b.color }"></span>{{ b.bucket }}</span>
+          <span><strong ng-style="{ color: b.color }">{{ b.pct | number:1 }}%</strong> <span class="an-caption">{{ b.count | number }}</span></span>
+        </div>
+        <div class="an-age__track">
+          <div class="an-age__fill" ng-style="{ width: b.pct + '%', background: 'linear-gradient(90deg, ' + b.color + '66, ' + b.color + ')', 'box-shadow': b.glow ? '0 0 8px ' + b.color + '80' : 'none' }"></div>
+        </div>
+      </div>
+      <div class="an-age__legend">
+        <span ng-repeat="l in $ctrl.ageLegend track by l.label"><span class="swatch swatch--xs" ng-style="{ background: l.color }"></span>{{ l.label }}</span>
+      </div>
+    </div>
+  </div>
+</div>

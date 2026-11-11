@@ -1,0 +1,57 @@
+[
+  {
+    "ruleGroupName": "BadBots",
+    "rules": [
+      {
+        "ruleId": "100100",
+        "state": "Disabled",
+        "action": "Log"
+      },
+      {
+        "ruleId": "100200",
+        "state": "Disabled",
+        "action": "Log"
+      }
+    ]
+  },
+  {
+    "ruleGroupName": "UnknownBots",
+    "rules": [
+      {
+        "ruleId": "300100",
+        "state": "Disabled",
+        "action": "Log"
+      },
+      {
+        "ruleId": "300200",
+        "state": "Disabled",
+        "action": "Log"
+      },
+      {
+        "ruleId": "300300",
+        "state": "Disabled",
+        "action": "Log"
+      },
+      {
+        "ruleId": "300400",
+        "state": "Disabled",
+        "action": "Log"
+      },
+      {
+        "ruleId": "300500",
+        "state": "Disabled",
+        "action": "Log"
+      },
+      {
+        "ruleId": "300600",
+        "state": "Disabled",
+        "action": "Log"
+      },
+      {
+        "ruleId": "300700",
+        "state": "Disabled",
+        "action": "Log"
+      }
+    ]
+  }
+]

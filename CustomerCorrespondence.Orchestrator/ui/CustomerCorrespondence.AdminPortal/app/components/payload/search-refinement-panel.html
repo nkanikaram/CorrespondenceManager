@@ -1,0 +1,33 @@
+<div class="refine" ng-if="$ctrl.hasContent()">
+  <div class="refine__head">
+    <span>✨</span>
+    <span class="refine__title">Search Tips</span>
+    <span class="pill pill--info">{{ $ctrl.count() | ccPlural:'Suggestion' }}</span>
+    <button type="button" class="link-btn link-btn--muted refine__toggle" ng-click="$ctrl.collapsed = !$ctrl.collapsed">{{ $ctrl.collapsed ? '▼ Show' : '▲ Hide' }}</button>
+  </div>
+  <div class="refine__body" ng-if="!$ctrl.collapsed">
+    <div class="refine__typo" ng-if="$ctrl.typoFix()">
+      <div>
+        <strong>🔤 Did you mean: <code>{{ $ctrl.typoFix().corrected }}</code>?</strong>
+        <div class="muted small">We detected a typo: "<code>{{ $ctrl.typoFix().original }}</code>" might be "<code>{{ $ctrl.typoFix().corrected }}</code>"</div>
+      </div>
+      <button type="button" class="btn btn--sm btn--outline-warning" ng-click="$ctrl.onApplyTypoFix({ corrected: $ctrl.typoFix().corrected })">Fix Typo</button>
+    </div>
+    <div ng-if="$ctrl.suggestions().length">
+      <div class="muted small refine__label">🎯 Try These Filters:</div>
+      <div class="refine__cards">
+        <div class="refine__card" ng-repeat="s in $ctrl.visibleSuggestions() track by s.id">
+          <div class="refine__card-head">
+            <strong class="small">{{ s.icon }} {{ s.title }}</strong>
+            <button type="button" class="link-btn link-btn--muted" title="Dismiss" ng-click="$ctrl.dismiss(s)">✕</button>
+          </div>
+          <div class="muted small" ng-if="s.description">{{ s.description }}</div>
+          <div class="refine__card-actions">
+            <button type="button" class="btn btn--sm btn--outline-info" ng-click="$ctrl.apply(s)">Apply Filter</button>
+            <span class="muted small">{{ s.confidence * 100 | number:0 }}% match</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

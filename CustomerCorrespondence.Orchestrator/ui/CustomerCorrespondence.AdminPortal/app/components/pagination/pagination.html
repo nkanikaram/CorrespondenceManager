@@ -1,0 +1,51 @@
+<div class="pager" role="navigation" aria-label="Pagination">
+  <div class="pager__nav">
+    <button type="button" class="pager__icon pager__icon--edge" ng-click="$ctrl.goTo(1)" ng-disabled="$ctrl.currentPage === 1"
+            title="Go to the first page" aria-label="Go to the first page">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3v10M12 3 7 8l5 5" /></svg>
+    </button>
+    <button type="button" class="pager__icon" ng-click="$ctrl.goTo($ctrl.currentPage - 1)" ng-disabled="$ctrl.currentPage === 1"
+            title="Go to the previous page" aria-label="Go to the previous page">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" /></svg>
+    </button>
+
+    <div class="pager__numbers">
+      <button type="button" ng-repeat="item in $ctrl.items track by $index"
+              class="pager__num" ng-class="{ 'is-selected': item.page === $ctrl.currentPage && !item.gap }"
+              ng-click="$ctrl.goTo(item.page)"
+              title="{{ item.gap ? 'More pages' : 'Page ' + item.page }}"
+              aria-label="{{ item.gap ? 'More pages' : 'Page ' + item.page }}"
+              aria-current="{{ item.page === $ctrl.currentPage && !item.gap ? 'page' : undefined }}">{{ item.gap ? '...' : item.page }}</button>
+    </div>
+
+    <!-- Narrow: Kendo swaps the number buttons for a page select -->
+    <select class="pager__page-select" aria-label="Page" ng-model="$ctrl.selectedPage" ng-change="$ctrl.goTo($ctrl.selectedPage)"
+            ng-options="p for p in $ctrl.allPages"></select>
+
+    <button type="button" class="pager__icon" ng-click="$ctrl.goTo($ctrl.currentPage + 1)" ng-disabled="$ctrl.currentPage >= $ctrl.totalPages"
+            title="Go to the next page" aria-label="Go to the next page">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6 3 5 5-5 5" /></svg>
+    </button>
+    <button type="button" class="pager__icon pager__icon--edge" ng-click="$ctrl.goTo($ctrl.totalPages)" ng-disabled="$ctrl.currentPage >= $ctrl.totalPages"
+            title="Go to the last page" aria-label="Go to the last page">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 3 5 5-5 5M12 3v10" /></svg>
+    </button>
+  </div>
+
+  <label class="pager__sizes">
+    <span class="pager__select">
+      <select ng-model="$ctrl.selectedSize" ng-options="size for size in $ctrl.pageSizeOptions" ng-change="$ctrl.changeSize()"
+              aria-label="Items per page"></select>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+    </span>
+    <span class="pager__sizes-label">items per page</span>
+  </label>
+
+  <div class="pager__info pagination__summary" aria-live="polite">
+    <span ng-if="$ctrl.totalItems" title="{{ $ctrl.rangeStart }} - {{ $ctrl.rangeEnd }} of {{ $ctrl.totalItems | number }} items">
+      <span class="pager__info-full">{{ $ctrl.rangeStart }} - {{ $ctrl.rangeEnd }} of {{ $ctrl.totalItems | number }} items</span>
+      <span class="pager__info-short">{{ $ctrl.rangeStart }}–{{ $ctrl.rangeEnd }} of {{ $ctrl.totalItems | number }}</span>
+    </span>
+    <span ng-if="!$ctrl.totalItems">No items to display</span>
+  </div>
+</div>
